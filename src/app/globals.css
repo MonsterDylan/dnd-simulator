@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-dnd-dark: #0C0A09;
+  --color-dnd-surface: #1C1917;
+  --color-dnd-muted: #292524;
+  --color-dnd-border: #44403C;
+  --color-dnd-gold: #D97706;
+  --color-dnd-gold-light: #F59E0B;
+  --color-dnd-red: #DC2626;
+  --color-dnd-red-light: #EF4444;
+  --color-dnd-green: #16A34A;
+  --color-dnd-blue: #2563EB;
+  --color-dnd-purple: #7C3AED;
+  --color-dnd-parchment: #FEF3C7;
+  --color-dnd-parchment-dark: #FDE68A;
+  --color-dnd-text: #F5F5F4;
+  --color-dnd-text-muted: #A8A29E;
+  --color-dnd-text-dark: #292524;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-dnd-dark);
+  color: var(--color-dnd-text);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom scrollbar */
+.game-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.game-scroll::-webkit-scrollbar-track {
+  background: var(--color-dnd-surface);
+}
+.game-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-dnd-border);
+  border-radius: 3px;
+}
+.game-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dnd-gold);
+}
+
+/* Typing dots animation */
+@keyframes typingDot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+.typing-dot:nth-child(1) { animation: typingDot 1.4s infinite 0s; }
+.typing-dot:nth-child(2) { animation: typingDot 1.4s infinite 0.2s; }
+.typing-dot:nth-child(3) { animation: typingDot 1.4s infinite 0.4s; }
+
+/* Dice roll animation */
+@keyframes diceShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-15deg) scale(1.1); }
+  50% { transform: rotate(15deg) scale(1.1); }
+  75% { transform: rotate(-10deg) scale(1.05); }
+}
+.dice-rolling {
+  animation: diceShake 0.5s ease-in-out;
+}
+
+/* Parchment text style */
+.parchment-text {
+  background: linear-gradient(135deg, var(--color-dnd-parchment), var(--color-dnd-parchment-dark));
+  color: var(--color-dnd-text-dark);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* Token glow effect for active turn */
+@keyframes tokenGlow {
+  0%, 100% { box-shadow: 0 0 8px 2px var(--color-dnd-gold); }
+  50% { box-shadow: 0 0 16px 4px var(--color-dnd-gold-light); }
+}
+.token-active {
+  animation: tokenGlow 2s ease-in-out infinite;
+}
+
+/* Grid map backgrounds */
+.map-tavern {
+  background: linear-gradient(135deg, #3E2723 0%, #4E342E 50%, #5D4037 100%);
+}
+.map-dungeon {
+  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+}
+.map-forest {
+  background: linear-gradient(135deg, #1B4332 0%, #2D6A4F 50%, #40916C 100%);
+}
+.map-cave {
+  background: linear-gradient(135deg, #212121 0%, #37474F 50%, #455A64 100%);
+}
+.map-town {
+  background: linear-gradient(135deg, #4A3728 0%, #5D4E37 50%, #8D6E63 100%);
 }

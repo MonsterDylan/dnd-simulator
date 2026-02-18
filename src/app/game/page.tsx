@@ -1,0 +1,141 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { GameProvider, useGame } from "@/lib/GameContext";
+import { PARTY_COLORS } from "@/lib/helpers";
+import { PartyPanel } from "@/components/PartyPanel";
+import { GameMap } from "@/components/GameMap";
+import { NarrativeLog } from "@/components/NarrativeLog";
+import { CombatTracker } from "@/components/CombatTracker";
+import { DiceRoller } from "@/components/DiceRoller";
+
+function GameContent() {
+  const router = useRouter();
+  const { state, dispatch } = useGame();
+
+  // Load session from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("dnd-session");
+    if (!stored) {
+      router.push("/");
+      return;
+    }
+    try {
+      const data = JSON.parse(stored);
+      // Assign colors to party members
+      const partyWithColors = data.party.map(
+        (char: Record<string, unknown>, i: number) => ({
+          ...char,
+          color: PARTY_COLORS[i % PARTY_COLORS.length],
+        })
+      );
+      dispatch({
+        type: "SET_PARTY",
+        party: partyWithColors,
+        sessionId: data.sessionId,
+        scene: data.scene,
+        voiceAssignments: data.voiceAssignments || {},
+      });
+      // Add initial scene narration
+      dispatch({
+        type: "ADD_NARRATIVE",
+        entry: {
+          id: `scene-intro-${Date.now()}`,
+          type: "narration",
+          content: data.scene.description,
+          timestamp: new Date(),
+        },
+      });
+    } catch {
+      router.push("/");
+    }
+  }, [dispatch, router]);
+
+  if (state.mode === "setup") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center gap-3 text-dnd-text-muted">
+          <svg className="animate-spin h-6 w-6" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          Loading adventure...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Top Bar */}
+      <div className="h-12 bg-dnd-surface border-b border-dnd-border flex items-center justify-between px-4 shrink-0">
+        <div className="flex items-center gap-3">
+          <h1 className="text-dnd-gold font-bold text-sm">D&D Simulator</h1>
+          <span className="text-dnd-text-muted text-xs">|</span>
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              state.mode === "combat"
+                ? "bg-dnd-red/20 text-dnd-red-light"
+                : "bg-dnd-green/20 text-dnd-green"
+            }`}
+          >
+            {state.mode === "combat" ? "Combat" : "Exploration"}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => dispatch({ type: "TOGGLE_AUDIO" })}
+            className="text-dnd-text-muted hover:text-dnd-text text-xs px-2 py-1 rounded"
+            title={state.audioEnabled ? "Mute NPC voices" : "Unmute NPC voices"}
+          >
+            {state.audioEnabled ? "Sound On" : "Sound Off"}
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("dnd-session");
+              router.push("/");
+            }}
+            className="text-dnd-text-muted hover:text-dnd-red text-xs px-2 py-1 rounded"
+          >
+            End Session
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content: 3-panel layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel: Party */}
+        <div className="w-72 bg-dnd-surface border-r border-dnd-border overflow-y-auto game-scroll shrink-0">
+          <PartyPanel />
+        </div>
+
+        {/* Center Panel: Map */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 relative overflow-hidden">
+            <GameMap />
+          </div>
+          {state.mode === "combat" && state.combat && (
+            <CombatTracker />
+          )}
+        </div>
+
+        {/* Right Panel: Narrative */}
+        <div className="w-96 bg-dnd-surface border-l border-dnd-border flex flex-col shrink-0">
+          <NarrativeLog />
+        </div>
+      </div>
+
+      {/* Floating Dice Roller */}
+      <DiceRoller />
+    </div>
+  );
+}
+
+export default function GamePage() {
+  return (
+    <GameProvider>
+      <GameContent />
+    </GameProvider>
+  );
+}
