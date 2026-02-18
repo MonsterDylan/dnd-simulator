@@ -27,6 +27,7 @@ export interface Character {
   position: [number, number];
   voiceId: string;
   color: string;
+  imageUrl?: string;
 }
 
 export interface Spell {

@@ -12,7 +12,10 @@ export function GameMap() {
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
 
-  const mapClass = `map-${state.scene.mapId || "tavern"}`;
+  const isImageUrl = (state.scene.mapId ?? "").startsWith("http");
+  const mapClass = `rounded-lg border border-dnd-border relative select-none ${
+    isImageUrl ? "" : `map-${state.scene.mapId || "tavern"}`
+  }`;
 
   const handleMouseDown = useCallback(
     (charName: string, e: React.MouseEvent) => {
@@ -57,10 +60,15 @@ export function GameMap() {
 
       {/* Grid */}
       <div
-        className={`${mapClass} rounded-lg border border-dnd-border relative select-none`}
+        className={mapClass}
         style={{
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
+          ...(isImageUrl ? {
+            backgroundImage: `url(${state.scene.mapId})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          } : {}),
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -142,9 +150,26 @@ export function GameMap() {
               }}
               onMouseDown={(e) => handleMouseDown(char.name, e)}
             >
+              {char.imageUrl && (
+                <img
+                  src={char.imageUrl}
+                  alt={char.name}
+                  className="w-full h-full rounded-full object-cover shadow-lg border-2"
+                  style={{ borderColor: char.color }}
+                  title={`${char.name} (${char.race} ${char.className})`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                    const fb = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                    if (fb) fb.style.display = "flex";
+                  }}
+                />
+              )}
               <div
-                className="w-full h-full rounded-full border-2 border-white/30 flex items-center justify-center text-white text-xs font-bold shadow-lg"
-                style={{ backgroundColor: char.color }}
+                className="w-full h-full rounded-full border-2 border-white/30 items-center justify-center text-white text-xs font-bold shadow-lg"
+                style={{
+                  backgroundColor: char.color,
+                  display: char.imageUrl ? "none" : "flex",
+                }}
                 title={`${char.name} (${char.race} ${char.className})`}
               >
                 {char.name[0]}

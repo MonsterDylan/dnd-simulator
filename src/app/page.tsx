@@ -7,6 +7,14 @@ import { CharacterCard } from "@/components/CharacterCard";
 import { PARTY_COLORS } from "@/lib/helpers";
 import type { Character, Scene } from "@/lib/types";
 
+function charImageUrl(race: string, cls: string, name: string): string {
+  const prompt = encodeURIComponent(
+    `fantasy DnD 5e portrait ${race} ${cls}, RPG character game art, detailed illustration, front view, portrait crop, vibrant colors`
+  );
+  const seed = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  return `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${seed}`;
+}
+
 export default function Home() {
   const router = useRouter();
   const [party, setParty] = useState<Character[]>([]);
@@ -21,7 +29,11 @@ export default function Home() {
     setError("");
     try {
       const res = await generateParty(4);
-      setParty(res.party);
+      const partyWithImages = res.party.map((char) => ({
+        ...char,
+        imageUrl: charImageUrl(char.race, char.className, char.name),
+      }));
+      setParty(partyWithImages);
       setSessionId(res.sessionId);
       setScene(res.scene);
       setVoiceAssignments(res.voiceAssignments);

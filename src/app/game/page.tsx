@@ -10,6 +10,7 @@ import { NarrativeLog } from "@/components/NarrativeLog";
 import { CombatTracker } from "@/components/CombatTracker";
 import { DiceRoller } from "@/components/DiceRoller";
 import ReferenceChat from "@/components/ReferenceChat";
+import SceneChanger from "@/components/SceneChanger";
 
 function GameContent() {
   const router = useRouter();
@@ -111,6 +112,7 @@ function GameContent() {
           <div className="flex-1 overflow-y-auto game-scroll">
             <PartyPanel />
           </div>
+          <SceneChanger />
           <ReferenceChat />
         </div>
 
