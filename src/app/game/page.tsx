@@ -9,6 +9,7 @@ import { GameMap } from "@/components/GameMap";
 import { NarrativeLog } from "@/components/NarrativeLog";
 import { CombatTracker } from "@/components/CombatTracker";
 import { DiceRoller } from "@/components/DiceRoller";
+import ReferenceChat from "@/components/ReferenceChat";
 
 function GameContent() {
   const router = useRouter();
@@ -105,9 +106,12 @@ function GameContent() {
 
       {/* Main Content: 3-panel layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Party */}
-        <div className="w-72 bg-dnd-surface border-r border-dnd-border overflow-y-auto game-scroll shrink-0">
-          <PartyPanel />
+        {/* Left Panel: Party + Reference Chat */}
+        <div className="w-72 bg-dnd-surface border-r border-dnd-border flex flex-col shrink-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto game-scroll">
+            <PartyPanel />
+          </div>
+          <ReferenceChat />
         </div>
 
         {/* Center Panel: Map */}
