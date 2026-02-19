@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { generateParty } from "@/lib/api";
 import { CharacterCard } from "@/components/CharacterCard";
+import { CampaignCharacterSelect } from "@/components/CampaignCharacterSelect";
 import { PARTY_COLORS } from "@/lib/helpers";
 import type { Character, Scene, InventoryItem } from "@/lib/types";
 import campaignData from "@/data/campaigns/campaign4-episode1.json";
-import type { CampaignEpisode } from "@/data/campaigns/campaign4-schema";
+import type { CampaignEpisode, CastMember } from "@/data/campaigns/campaign4-schema";
 
 const episode = campaignData as CampaignEpisode;
 
@@ -24,6 +25,14 @@ const VOICE_POOL = [
   { id: "JBFqnCBsd6RMkjVDRZzb", name: "George" },
   { id: "N2lVS1w4EtoT3dr4eOWO", name: "Callum" },
   { id: "IKne3meq5aSn9XLyUdCD", name: "Charlie" },
+  { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam" },
+  { id: "pqHfZKP75CvOlQylNhV4", name: "Bill" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah" },
+  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte" },
+  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily" },
+  { id: "bIHbv24MWmeRgasZH58o", name: "Will" },
+  { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel" },
+  { id: "g5CIjZEefAph4nQFvHAz", name: "Ethan" },
 ];
 
 function uid() {
@@ -62,16 +71,13 @@ const CLASS_GEAR: Record<string, InventoryItem[]> = {
   Monk:      [{ name: "Shortsword", quantity: 1, type: "weapon" }, { name: "Dart", quantity: 10, type: "weapon" }, { name: "Explorer's Pack", quantity: 1, type: "gear" }],
 };
 
-function buildCampaignParty(): { party: Character[]; sessionId: string; scene: Scene; voiceAssignments: Record<string, string> } {
+function buildCampaignParty(selectedCast: CastMember[]): { party: Character[]; sessionId: string; scene: Scene; voiceAssignments: Record<string, string> } {
   const sessionId = uid() + "-" + uid();
   const party: Character[] = [];
   const voiceAssignments: Record<string, string> = {};
 
-  const shuffled = [...episode.cast].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, 4);
-
-  for (let i = 0; i < selected.length; i++) {
-    const member = selected[i];
+  for (let i = 0; i < selectedCast.length; i++) {
+    const member = selectedCast[i];
     const primaryClass = (member.class || "Fighter").split("/")[0].trim();
     const race = member.race || "Human";
     const hd = CLASS_HIT_DICE[primaryClass] || 8;
@@ -135,7 +141,7 @@ function buildCampaignParty(): { party: Character[]; sessionId: string; scene: S
   return { party, sessionId, scene, voiceAssignments };
 }
 
-type GameMode = null | "random" | "campaign";
+type GameMode = null | "random" | "campaign_select" | "campaign";
 
 export default function Home() {
   const router = useRouter();
@@ -169,12 +175,17 @@ export default function Home() {
     }
   };
 
-  const handleGenerateCampaign = () => {
+  const handleCampaignSelect = () => {
+    setMode("campaign_select");
+    setError("");
+  };
+
+  const handleConfirmCampaignParty = (selected: CastMember[]) => {
     setMode("campaign");
     setIsGenerating(true);
     setError("");
     try {
-      const result = buildCampaignParty();
+      const result = buildCampaignParty(selected);
       setParty(result.party);
       setSessionId(result.sessionId);
       setScene(result.scene);
@@ -209,7 +220,7 @@ export default function Home() {
       </div>
 
       {/* Mode Selection */}
-      {party.length === 0 && !isGenerating && (
+      {party.length === 0 && !isGenerating && mode !== "campaign_select" && (
         <div className="flex flex-col items-center gap-4">
           <div className="flex gap-4">
             <button
@@ -219,7 +230,7 @@ export default function Home() {
               Generate Random Party
             </button>
             <button
-              onClick={handleGenerateCampaign}
+              onClick={handleCampaignSelect}
               className="bg-dnd-purple hover:bg-dnd-purple/80 text-white font-bold text-lg px-8 py-4 rounded-xl transition-colors shadow-lg shadow-dnd-purple/20 border border-dnd-purple"
             >
               Campaign Mode
@@ -232,6 +243,17 @@ export default function Home() {
               Critical Role Campaign 4 with transcript-based lore.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Campaign Character Selection */}
+      {mode === "campaign_select" && (
+        <div className="w-full mt-6">
+          <CampaignCharacterSelect
+            cast={episode.cast}
+            onConfirm={handleConfirmCampaignParty}
+            onBack={() => { setMode(null); setError(""); }}
+          />
         </div>
       )}
 
@@ -252,7 +274,7 @@ export default function Home() {
 
       {/* Party Cards */}
       {party.length > 0 && (
-        <div className="w-full max-w-4xl mt-8">
+        <div className={`w-full mt-8 ${party.length <= 4 ? "max-w-4xl" : "max-w-6xl"}`}>
           <h2 className="text-2xl font-bold text-dnd-text mb-1 text-center">
             {mode === "campaign" ? "Campaign 4 Party" : "Your Adventuring Party"}
           </h2>
@@ -261,7 +283,9 @@ export default function Home() {
               Critical Role Campaign 4 — {episode.episode.title} — Dol-Makjar, Aramán
             </p>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className={`grid grid-cols-1 gap-4 mb-8 ${
+            party.length <= 4 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3"
+          }`}>
             {party.map((char, i) => (
               <CharacterCard
                 key={char.id}
@@ -297,10 +321,10 @@ export default function Home() {
             )}
             {mode === "campaign" && (
               <button
-                onClick={handleGenerateCampaign}
+                onClick={() => { setParty([]); setMode("campaign_select"); }}
                 className="border border-dnd-purple text-dnd-purple hover:bg-dnd-purple/10 px-6 py-3 rounded-xl transition-colors"
               >
-                Reroll Stats
+                Change Party
               </button>
             )}
             <button
