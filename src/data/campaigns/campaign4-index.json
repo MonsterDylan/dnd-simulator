@@ -33,7 +33,7 @@
       "duration": "5:00:54",
       "youtube_url": "https://www.youtube.com/watch?v=-9sEmHv26js",
       "file": "campaign4-episode3.json",
-      "available": false,
+      "available": true,
       "scene_description": "Secrets are unraveled as the party investigates the conspiracy behind the execution. Dark forces move in the shadows of Dol-Makjar, and every thread pulled reveals another tangled web of betrayal...",
       "scene_map": "town"
     },
