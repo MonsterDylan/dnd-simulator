@@ -159,20 +159,26 @@ export function CampaignCharacterSelect({
               </div>
 
               {/* Portrait */}
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex flex-col items-center gap-2 mb-2">
                 <div
-                  className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-colors ${
+                  className={`w-20 h-20 rounded-full overflow-hidden border-2 transition-colors bg-dnd-muted ${
                     isSelected ? "border-dnd-gold" : "border-dnd-border"
                   }`}
                 >
-                  <img
-                    src={CR4_CHARACTER_ART[member.character] || ""}
-                    alt={member.character}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  {CR4_CHARACTER_ART[member.character] ? (
+                    <img
+                      src={CR4_CHARACTER_ART[member.character]}
+                      alt={member.character}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-dnd-text-muted text-2xl font-bold">
+                      {member.character[0]}
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0 flex-1 pr-6">
+                <div className="text-center min-w-0 w-full">
                   <h3
                     className={`font-bold text-sm truncate transition-colors ${
                       isSelected ? "text-dnd-gold" : "text-dnd-text"
@@ -187,7 +193,7 @@ export function CampaignCharacterSelect({
               </div>
 
               {/* Class & Race tags */}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 justify-center">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-dnd-muted text-dnd-text text-xs">
                   {getRaceIcon(member.race)} {member.race || "Unknown"}
                 </span>
