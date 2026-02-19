@@ -233,3 +233,17 @@ export interface LookupMonsterRequest {
 export interface LookupMonsterResponse {
   monsters: Monster[];
 }
+
+// Campaign Lore types
+export interface CampaignLoreRequest {
+  action: "campaign_lore";
+  sessionId: string;
+  question: string;
+  campaignNumber: number;
+  episodeNumber: number;
+}
+
+export interface CampaignLoreResponse {
+  answer: string;
+  sources: { segment_id: string; content: string; type: string }[];
+}

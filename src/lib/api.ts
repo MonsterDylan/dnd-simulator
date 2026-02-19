@@ -8,6 +8,8 @@ import type {
   LookupResource,
   LookupRequest,
   LookupResponse,
+  CampaignLoreRequest,
+  CampaignLoreResponse,
 } from "./types";
 
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL!;
@@ -75,3 +77,18 @@ export async function lookupResource(
 // Backwards-compatible alias
 export const lookupMonster = (query: string) =>
   lookupResource("monster", query);
+
+export async function queryCampaignLore(
+  sessionId: string,
+  question: string,
+  campaignNumber = 4,
+  episodeNumber = 1
+): Promise<CampaignLoreResponse> {
+  return webhookFetch<CampaignLoreResponse>({
+    action: "campaign_lore",
+    sessionId,
+    question,
+    campaignNumber,
+    episodeNumber,
+  } satisfies CampaignLoreRequest);
+}

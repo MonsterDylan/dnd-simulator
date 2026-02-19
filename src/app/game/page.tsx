@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GameProvider, useGame } from "@/lib/GameContext";
 import { PARTY_COLORS } from "@/lib/helpers";
@@ -12,10 +12,12 @@ import { DiceRoller } from "@/components/DiceRoller";
 import ReferenceChat from "@/components/ReferenceChat";
 import SceneChanger from "@/components/SceneChanger";
 import TerrainPalette from "@/components/TerrainPalette";
+import CampaignLore from "@/components/CampaignLore";
 
 function GameContent() {
   const router = useRouter();
   const { state, dispatch } = useGame();
+  const [isCampaignMode, setIsCampaignMode] = useState(false);
 
   // Load session from localStorage on mount
   useEffect(() => {
@@ -26,6 +28,7 @@ function GameContent() {
     }
     try {
       const data = JSON.parse(stored);
+      setIsCampaignMode(!!data.campaignMode);
       // Assign colors to party members
       const partyWithColors = data.party.map(
         (char: Record<string, unknown>, i: number) => ({
@@ -75,6 +78,11 @@ function GameContent() {
       <div className="h-12 bg-dnd-surface border-b border-dnd-border flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-dnd-gold font-bold text-sm">D&D Simulator</h1>
+          {isCampaignMode && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-dnd-purple/20 text-dnd-purple border border-dnd-purple/30">
+              Campaign 4
+            </span>
+          )}
           <span className="text-dnd-text-muted text-xs">|</span>
           <span
             className={`text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -115,6 +123,7 @@ function GameContent() {
           </div>
           <SceneChanger />
           <TerrainPalette />
+          {isCampaignMode && <CampaignLore />}
           <ReferenceChat />
         </div>
 
