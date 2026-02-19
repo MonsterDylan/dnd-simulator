@@ -95,3 +95,34 @@ body {
 .map-town {
   background: linear-gradient(135deg, #4A3728 0%, #5D4E37 50%, #8D6E63 100%);
 }
+
+/* Terrain tile appearance */
+.terrain-tile {
+  transition: opacity 0.15s ease;
+}
+
+/* Terrain edit mode highlight */
+.terrain-edit-highlight:hover {
+  outline: 2px solid var(--color-dnd-gold);
+  outline-offset: -1px;
+  z-index: 5;
+}
+
+/* Lava shimmer */
+@keyframes lavaShimmer {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Water ripple */
+@keyframes waterRipple {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 0.9; }
+}
+
+/* Fire flicker */
+@keyframes fireFlicker {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  25% { opacity: 1; transform: scale(1.02); }
+  75% { opacity: 0.85; transform: scale(0.98); }
+}

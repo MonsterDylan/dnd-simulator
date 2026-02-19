@@ -92,10 +92,51 @@ export interface CombatState {
   monsters: Monster[];
 }
 
+export type TerrainType =
+  | "wall"
+  | "door"
+  | "door_open"
+  | "table"
+  | "chair"
+  | "water"
+  | "deep_water"
+  | "lava"
+  | "pit"
+  | "pillar"
+  | "tree"
+  | "bush"
+  | "rock"
+  | "chest"
+  | "stairs_up"
+  | "stairs_down"
+  | "trap"
+  | "fire"
+  | "barrel"
+  | "bookshelf"
+  | "bed"
+  | "rubble"
+  | "ice"
+  | "bridge"
+  | "altar"
+  | "statue"
+  | "fountain";
+
+export interface TerrainFeature {
+  type: TerrainType;
+  position: [number, number];
+  blocksMovement: boolean;
+  blocksSight: boolean;
+  label?: string;
+}
+
 export interface Scene {
   description: string;
   mapId: string;
+  terrain: TerrainFeature[];
 }
+
+/** Scene data as received from external sources (terrain may be missing) */
+export type SceneInput = Omit<Scene, "terrain"> & { terrain?: TerrainFeature[] };
 
 export interface GameState {
   sessionId: string;
@@ -107,6 +148,8 @@ export interface GameState {
   isLoading: boolean;
   audioEnabled: boolean;
   voiceAssignments: Record<string, string>;
+  terrainEditMode: boolean;
+  selectedTerrainType: TerrainType | null;
 }
 
 // API request/response types

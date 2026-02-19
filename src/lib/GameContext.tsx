@@ -7,18 +7,23 @@ import {
   type ReactNode,
   type Dispatch,
 } from "react";
-import type { GameState, NarrativeEntry, Character, CombatState, Scene } from "./types";
+import type { GameState, NarrativeEntry, Character, CombatState, SceneInput, TerrainFeature, TerrainType } from "./types";
 
-// Actions
 type GameAction =
-  | { type: "SET_PARTY"; party: Character[]; sessionId: string; scene: Scene; voiceAssignments: Record<string, string> }
+  | { type: "SET_PARTY"; party: Character[]; sessionId: string; scene: SceneInput; voiceAssignments: Record<string, string> }
   | { type: "SET_MODE"; mode: GameState["mode"] }
   | { type: "ADD_NARRATIVE"; entry: NarrativeEntry }
   | { type: "ADD_NARRATIVES"; entries: NarrativeEntry[] }
   | { type: "UPDATE_PARTY"; updates: Record<string, Partial<Character>> }
   | { type: "UPDATE_CHARACTER_POSITION"; name: string; position: [number, number] }
   | { type: "SET_COMBAT"; combat: CombatState | null }
-  | { type: "SET_SCENE"; scene: Scene }
+  | { type: "SET_SCENE"; scene: SceneInput }
+  | { type: "SET_TERRAIN"; terrain: TerrainFeature[] }
+  | { type: "PLACE_TERRAIN"; feature: TerrainFeature }
+  | { type: "REMOVE_TERRAIN"; position: [number, number] }
+  | { type: "CLEAR_TERRAIN" }
+  | { type: "SET_TERRAIN_EDIT_MODE"; enabled: boolean }
+  | { type: "SET_SELECTED_TERRAIN"; terrainType: TerrainType | null }
   | { type: "SET_LOADING"; isLoading: boolean }
   | { type: "TOGGLE_AUDIO" }
   | { type: "RESET" };
@@ -27,12 +32,14 @@ const initialState: GameState = {
   sessionId: "",
   mode: "setup",
   party: [],
-  scene: { description: "", mapId: "tavern" },
+  scene: { description: "", mapId: "tavern", terrain: [] },
   combat: null,
   narrativeLog: [],
   isLoading: false,
   audioEnabled: true,
   voiceAssignments: {},
+  terrainEditMode: false,
+  selectedTerrainType: null,
 };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
@@ -42,7 +49,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         ...state,
         party: action.party,
         sessionId: action.sessionId,
-        scene: action.scene,
+        scene: { ...action.scene, terrain: action.scene.terrain ?? [] },
         voiceAssignments: action.voiceAssignments,
         mode: "exploration",
       };
@@ -87,7 +94,37 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case "SET_SCENE":
-      return { ...state, scene: action.scene };
+      return { ...state, scene: { ...action.scene, terrain: action.scene.terrain ?? state.scene.terrain } };
+
+    case "SET_TERRAIN":
+      return { ...state, scene: { ...state.scene, terrain: action.terrain } };
+
+    case "PLACE_TERRAIN": {
+      const filtered = state.scene.terrain.filter(
+        (t) => !(t.position[0] === action.feature.position[0] && t.position[1] === action.feature.position[1])
+      );
+      return { ...state, scene: { ...state.scene, terrain: [...filtered, action.feature] } };
+    }
+
+    case "REMOVE_TERRAIN":
+      return {
+        ...state,
+        scene: {
+          ...state.scene,
+          terrain: state.scene.terrain.filter(
+            (t) => !(t.position[0] === action.position[0] && t.position[1] === action.position[1])
+          ),
+        },
+      };
+
+    case "CLEAR_TERRAIN":
+      return { ...state, scene: { ...state.scene, terrain: [] } };
+
+    case "SET_TERRAIN_EDIT_MODE":
+      return { ...state, terrainEditMode: action.enabled, selectedTerrainType: action.enabled ? state.selectedTerrainType : null };
+
+    case "SET_SELECTED_TERRAIN":
+      return { ...state, selectedTerrainType: action.terrainType };
 
     case "SET_LOADING":
       return { ...state, isLoading: action.isLoading };

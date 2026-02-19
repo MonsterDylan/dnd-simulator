@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useGame } from "@/lib/GameContext";
-import { MAP_NAMES } from "@/lib/helpers";
+import { MAP_NAMES, TERRAIN_CATALOG } from "@/lib/helpers";
 
 const GRID_SIZE = 16;
 const CELL_SIZE = 36;
@@ -11,18 +11,86 @@ export function GameMap() {
   const { state, dispatch } = useGame();
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [eraseMode, setEraseMode] = useState(false);
+  const [painting, setPainting] = useState(false);
 
   const isImageUrl = (state.scene.mapId ?? "").startsWith("http");
+
+  useEffect(() => {
+    if (!isImageUrl) {
+      setImageLoading(false);
+      return;
+    }
+    setImageLoading(true);
+    const img = new Image();
+    img.onload = () => setImageLoading(false);
+    img.onerror = () => setImageLoading(false);
+    img.src = state.scene.mapId;
+  }, [state.scene.mapId, isImageUrl]);
+
   const mapClass = `rounded-lg border border-dnd-border relative select-none ${
     isImageUrl ? "" : `map-${state.scene.mapId || "tavern"}`
   }`;
 
+  const terrainMap = useMemo(() => {
+    const map = new Map<string, (typeof state.scene.terrain)[0]>();
+    for (const t of state.scene.terrain) {
+      map.set(`${t.position[0]},${t.position[1]}`, t);
+    }
+    return map;
+  }, [state.scene.terrain]);
+
+  const handleTerrainClick = useCallback(
+    (x: number, y: number) => {
+      if (!state.terrainEditMode) return;
+
+      if (eraseMode) {
+        dispatch({ type: "REMOVE_TERRAIN", position: [x, y] });
+        return;
+      }
+
+      if (!state.selectedTerrainType) return;
+
+      const def = TERRAIN_CATALOG[state.selectedTerrainType];
+      dispatch({
+        type: "PLACE_TERRAIN",
+        feature: {
+          type: state.selectedTerrainType,
+          position: [x, y],
+          blocksMovement: def.blocksMovement,
+          blocksSight: def.blocksSight,
+        },
+      });
+    },
+    [state.terrainEditMode, state.selectedTerrainType, eraseMode, dispatch]
+  );
+
+  const handleCellMouseDown = useCallback(
+    (x: number, y: number) => {
+      if (!state.terrainEditMode) return;
+      setPainting(true);
+      handleTerrainClick(x, y);
+    },
+    [state.terrainEditMode, handleTerrainClick]
+  );
+
+  const handleCellMouseEnter = useCallback(
+    (x: number, y: number) => {
+      if (!painting || !state.terrainEditMode) return;
+      handleTerrainClick(x, y);
+    },
+    [painting, state.terrainEditMode, handleTerrainClick]
+  );
+
   const handleMouseDown = useCallback(
     (charName: string, e: React.MouseEvent) => {
+      if (state.terrainEditMode) return;
       e.preventDefault();
+      e.stopPropagation();
       setDragging(charName);
     },
-    []
+    [state.terrainEditMode]
   );
 
   const handleMouseMove = useCallback(
@@ -49,13 +117,49 @@ export function GameMap() {
     }
     setDragging(null);
     setDragPos(null);
+    setPainting(false);
   }, [dragging, dragPos, dispatch]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4">
-      {/* Map label */}
-      <div className="text-sm text-dnd-text-muted mb-2">
-        {MAP_NAMES[state.scene.mapId] || state.scene.mapId}
+      {/* Map label + terrain edit toggle */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="text-sm text-dnd-text-muted">
+          {MAP_NAMES[state.scene.mapId] || state.scene.description || state.scene.mapId}
+        </div>
+        <button
+          onClick={() => {
+            dispatch({ type: "SET_TERRAIN_EDIT_MODE", enabled: !state.terrainEditMode });
+            setEraseMode(false);
+          }}
+          className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+            state.terrainEditMode
+              ? "bg-dnd-gold/20 border-dnd-gold text-dnd-gold"
+              : "bg-dnd-surface border-dnd-border text-dnd-text-muted hover:text-dnd-gold hover:border-dnd-gold/40"
+          }`}
+        >
+          {state.terrainEditMode ? "Editing Terrain" : "Edit Terrain"}
+        </button>
+        {state.terrainEditMode && (
+          <>
+            <button
+              onClick={() => setEraseMode(!eraseMode)}
+              className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                eraseMode
+                  ? "bg-dnd-red/20 border-dnd-red text-dnd-red-light"
+                  : "bg-dnd-surface border-dnd-border text-dnd-text-muted hover:text-dnd-red-light hover:border-dnd-red/40"
+              }`}
+            >
+              Eraser
+            </button>
+            <button
+              onClick={() => dispatch({ type: "CLEAR_TERRAIN" })}
+              className="text-xs px-2 py-0.5 rounded border border-dnd-border text-dnd-text-muted hover:text-dnd-red-light hover:border-dnd-red/40 transition-colors"
+            >
+              Clear All
+            </button>
+          </>
+        )}
       </div>
 
       {/* Grid */}
@@ -64,16 +168,32 @@ export function GameMap() {
         style={{
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
-          ...(isImageUrl ? {
-            backgroundImage: `url(${state.scene.mapId})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          } : {}),
+          ...(isImageUrl
+            ? {
+                backgroundImage: `url(${state.scene.mapId})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : {}),
+          cursor: state.terrainEditMode
+            ? eraseMode
+              ? "crosshair"
+              : state.selectedTerrainType
+              ? "cell"
+              : "default"
+            : "default",
         }}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
+        {/* Loading overlay for AI images */}
+        {isImageUrl && imageLoading && (
+          <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50 rounded-lg">
+            <div className="text-dnd-gold text-sm animate-pulse">Generating map...</div>
+          </div>
+        )}
+
         {/* Grid lines */}
         <svg
           className="absolute inset-0 pointer-events-none opacity-15"
@@ -102,11 +222,63 @@ export function GameMap() {
           ))}
         </svg>
 
+        {/* Terrain edit grid overlay (clickable cells) */}
+        {state.terrainEditMode && (
+          <div className="absolute inset-0 z-5">
+            {Array.from({ length: GRID_SIZE }).map((_, y) =>
+              Array.from({ length: GRID_SIZE }).map((_, x) => (
+                <div
+                  key={`cell-${x}-${y}`}
+                  className="absolute hover:bg-white/10 transition-colors"
+                  style={{
+                    left: x * CELL_SIZE,
+                    top: y * CELL_SIZE,
+                    width: CELL_SIZE,
+                    height: CELL_SIZE,
+                  }}
+                  onMouseDown={() => handleCellMouseDown(x, y)}
+                  onMouseEnter={() => handleCellMouseEnter(x, y)}
+                />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Terrain Features */}
+        {state.scene.terrain.map((feature) => {
+          const def = TERRAIN_CATALOG[feature.type];
+          if (!def) return null;
+          return (
+            <div
+              key={`terrain-${feature.position[0]}-${feature.position[1]}`}
+              className="absolute flex items-center justify-center pointer-events-none z-[2] terrain-tile"
+              style={{
+                left: feature.position[0] * CELL_SIZE,
+                top: feature.position[1] * CELL_SIZE,
+                width: CELL_SIZE,
+                height: CELL_SIZE,
+              }}
+              title={`${def.label}${feature.blocksMovement ? " (blocks movement)" : ""}${feature.blocksSight ? " (blocks sight)" : ""}`}
+            >
+              <div
+                className="w-full h-full flex items-center justify-center rounded-sm"
+                style={{
+                  backgroundColor: def.bg,
+                  border: `1px solid ${def.border}`,
+                  opacity: 0.85,
+                }}
+              >
+                <span className="text-sm leading-none select-none" role="img">{def.emoji}</span>
+              </div>
+            </div>
+          );
+        })}
+
         {/* Monster Tokens */}
         {state.combat?.monsters?.map((monster, i) => (
           <div
             key={`monster-${i}`}
-            className="absolute flex items-center justify-center cursor-default"
+            className="absolute flex items-center justify-center cursor-default z-10"
             style={{
               left: monster.position[0] * CELL_SIZE + 2,
               top: monster.position[1] * CELL_SIZE + 2,
@@ -138,8 +310,8 @@ export function GameMap() {
           return (
             <div
               key={char.id}
-              className={`absolute flex items-center justify-center cursor-grab active:cursor-grabbing transition-all ${
-                dragging === char.name ? "z-20 scale-110" : "z-10"
+              className={`absolute flex items-center justify-center cursor-grab active:cursor-grabbing transition-all z-10 ${
+                dragging === char.name ? "z-20 scale-110" : ""
               } ${isActiveTurn ? "token-active" : ""}`}
               style={{
                 left: pos.x * CELL_SIZE + 2,

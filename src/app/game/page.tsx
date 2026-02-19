@@ -11,6 +11,7 @@ import { CombatTracker } from "@/components/CombatTracker";
 import { DiceRoller } from "@/components/DiceRoller";
 import ReferenceChat from "@/components/ReferenceChat";
 import SceneChanger from "@/components/SceneChanger";
+import TerrainPalette from "@/components/TerrainPalette";
 
 function GameContent() {
   const router = useRouter();
@@ -113,6 +114,7 @@ function GameContent() {
             <PartyPanel />
           </div>
           <SceneChanger />
+          <TerrainPalette />
           <ReferenceChat />
         </div>
 
