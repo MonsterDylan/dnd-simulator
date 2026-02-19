@@ -176,6 +176,10 @@ export interface DmInputRequest {
     scene: Scene;
     combat: CombatState | null;
   };
+  campaignContext?: {
+    worldContext: string;
+    charProfiles: Record<string, string>;
+  };
 }
 
 export interface DmInputResponse {

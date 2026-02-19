@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useGame } from "@/lib/GameContext";
 import { sendDmInput } from "@/lib/api";
 import type { NarrativeEntry } from "@/lib/types";
+import campaignData from "@/data/campaigns/campaign4-episode1.json";
+import type { CampaignEpisode } from "@/data/campaigns/campaign4-schema";
+
+const episode = campaignData as CampaignEpisode;
 
 function NarrativeEntryView({ entry }: { entry: NarrativeEntry }) {
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -123,13 +127,68 @@ export function NarrativeLog() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.narrativeLog]);
 
+  const isCampaignMode = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("dnd-session");
+      return stored ? !!JSON.parse(stored).campaignMode : false;
+    } catch { return false; }
+  }, []);
+
+  const campaignContext = useMemo(() => {
+    if (!isCampaignMode) return undefined;
+
+    const charProfiles: Record<string, string> = {};
+
+    for (const member of episode.cast) {
+      const firstName = member.character.split(" ")[0].toLowerCase();
+      const relevantSegments = episode.segments.filter(
+        (s) =>
+          s.speaker.toLowerCase().includes(firstName) &&
+          (s.type === "dialogue" || s.type === "narration" || s.type === "description")
+      );
+
+      const dialogueLines = relevantSegments
+        .filter((s) => s.type === "dialogue")
+        .slice(0, 8)
+        .map((s) => s.content.slice(0, 200));
+
+      const descriptions = relevantSegments
+        .filter((s) => s.type === "description" || s.type === "narration")
+        .slice(0, 3)
+        .map((s) => s.content.slice(0, 200));
+
+      const loreKeywords = new Set<string>();
+      for (const seg of relevantSegments.slice(0, 20)) {
+        for (const kw of seg.metadata?.lore_keywords || []) {
+          loreKeywords.add(kw);
+        }
+      }
+
+      charProfiles[member.character] = [
+        `${member.character} (played by ${member.player}) - ${member.race || "Unknown"} ${member.class || "Unknown"}`,
+        descriptions.length > 0 ? `Descriptions: ${descriptions.join(" | ")}` : "",
+        dialogueLines.length > 0 ? `Sample dialogue: "${dialogueLines.join('" | "')}"` : "",
+        loreKeywords.size > 0 ? `Lore: ${Array.from(loreKeywords).slice(0, 10).join(", ")}` : "",
+      ].filter(Boolean).join("\n");
+    }
+
+    const worldContext = [
+      `Campaign: ${episode.campaign.name}`,
+      `World: ${episode.campaign.world}`,
+      `DM: ${episode.campaign.dm}`,
+      `System: ${episode.campaign.system}`,
+      `Episode: ${episode.episode.title}`,
+    ].join(", ");
+
+    return { worldContext, charProfiles };
+  }, [isCampaignMode]);
+
   const handleSend = async () => {
     if (!input.trim() || state.isLoading) return;
 
     const message = input.trim();
     setInput("");
 
-    // Add DM message to log
     dispatch({
       type: "ADD_NARRATIVE",
       entry: {
@@ -143,11 +202,15 @@ export function NarrativeLog() {
     dispatch({ type: "SET_LOADING", isLoading: true });
 
     try {
-      // Build token positions map
       const tokenPositions: Record<string, [number, number]> = {};
       state.party.forEach((char) => {
         tokenPositions[char.name] = char.position;
       });
+
+      const sceneForApi = {
+        description: state.scene.description,
+        mapId: state.scene.mapId,
+      };
 
       const response = await sendDmInput(
         state.sessionId,
@@ -156,9 +219,10 @@ export function NarrativeLog() {
         {
           mode: state.mode,
           party: state.party,
-          scene: state.scene,
+          scene: sceneForApi as typeof state.scene,
           combat: state.combat,
-        }
+        },
+        campaignContext
       );
 
       // Build narrative entries from response

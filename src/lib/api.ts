@@ -41,7 +41,8 @@ export async function sendDmInput(
   sessionId: string,
   message: string,
   tokenPositions?: Record<string, [number, number]>,
-  gameState?: DmInputRequest["gameState"]
+  gameState?: DmInputRequest["gameState"],
+  campaignContext?: DmInputRequest["campaignContext"]
 ): Promise<DmInputResponse> {
   return webhookFetch<DmInputResponse>({
     action: "dm_input",
@@ -49,6 +50,7 @@ export async function sendDmInput(
     message,
     tokenPositions,
     gameState,
+    campaignContext,
   } satisfies DmInputRequest);
 }
 
