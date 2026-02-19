@@ -314,7 +314,10 @@ export default function CampaignLore() {
         ...prev,
         { role: "assistant", content: resp.answer, sources: resp.sources },
       ]);
-    } catch {
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error("Campaign lore query failed:", errMsg);
+
       const localResults = episode.segments
         .filter(
           (s) =>
@@ -331,7 +334,7 @@ export default function CampaignLore() {
           ...prev,
           {
             role: "assistant",
-            content: `I found ${localResults.length} relevant segment(s) in the transcript:\n\n${localResults
+            content: `(AI unavailable: ${errMsg})\n\nLocal search found ${localResults.length} segment(s):\n\n${localResults
               .map(
                 (s) =>
                   `[${s.segment_id}] ${s.speaker}: "${s.content.slice(0, 150)}${s.content.length > 150 ? "..." : ""}"`
@@ -349,8 +352,7 @@ export default function CampaignLore() {
           ...prev,
           {
             role: "assistant",
-            content:
-              "The campaign lore AI is not available right now. I searched the transcript locally but couldn't find a match. Try different keywords.",
+            content: `Campaign lore AI error: ${errMsg}. Local keyword search found no matches — try different terms.`,
           },
         ]);
       }

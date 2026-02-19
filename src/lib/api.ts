@@ -15,9 +15,13 @@ import type {
   TerrainType,
 } from "./types";
 
-const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL!;
+const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL ?? "";
 
 async function webhookFetch<T>(body: Record<string, unknown>): Promise<T> {
+  if (!WEBHOOK_URL) {
+    throw new Error("NEXT_PUBLIC_WEBHOOK_URL is not configured");
+  }
+
   const res = await fetch(WEBHOOK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -25,7 +29,8 @@ async function webhookFetch<T>(body: Record<string, unknown>): Promise<T> {
   });
 
   if (!res.ok) {
-    throw new Error(`Webhook request failed: ${res.status}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(`Webhook request failed: ${res.status} ${text}`);
   }
 
   return res.json();
