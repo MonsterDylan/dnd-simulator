@@ -309,7 +309,7 @@ export default function CampaignLore() {
     setChatLoading(true);
 
     try {
-      const resp = await queryCampaignLore(state.sessionId, q, 4, 1);
+      const resp = await queryCampaignLore(state.sessionId, q, 4, 0);
       setChatMessages((prev) => [
         ...prev,
         { role: "assistant", content: resp.answer, sources: resp.sources },
