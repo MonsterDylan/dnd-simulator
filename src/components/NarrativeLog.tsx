@@ -210,7 +210,35 @@ export function NarrativeLog() {
       const sceneForApi = {
         description: state.scene.description,
         mapId: state.scene.mapId,
+        terrain: [],
       };
+
+      const leanParty = state.party.map((c) => ({
+        name: c.name,
+        race: c.race,
+        className: c.className,
+        level: c.level,
+        hp: c.hp,
+        ac: c.ac,
+        speed: c.speed,
+        abilities: c.abilities,
+        personalityTraits: c.personalityTraits,
+        alignment: c.alignment,
+        position: c.position,
+        voiceId: c.voiceId,
+      }));
+
+      const contextForParty = campaignContext
+        ? {
+            worldContext: campaignContext.worldContext,
+            charProfiles: Object.fromEntries(
+              leanParty.map((c) => [
+                c.name,
+                campaignContext.charProfiles[c.name] || "",
+              ]).filter(([, v]) => v)
+            ),
+          }
+        : undefined;
 
       const response = await sendDmInput(
         state.sessionId,
@@ -218,11 +246,11 @@ export function NarrativeLog() {
         tokenPositions,
         {
           mode: state.mode,
-          party: state.party,
-          scene: sceneForApi as typeof state.scene,
+          party: leanParty as typeof state.party,
+          scene: sceneForApi,
           combat: state.combat,
         },
-        campaignContext
+        contextForParty
       );
 
       // Build narrative entries from response
@@ -292,14 +320,14 @@ export function NarrativeLog() {
         });
       }
     } catch (error) {
-      console.error("Failed to send DM input:", error);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Failed to send DM input:", errMsg, error);
       dispatch({
         type: "ADD_NARRATIVE",
         entry: {
           id: uuidv4(),
           type: "system",
-          content:
-            "Failed to process your input. Please try again.",
+          content: `Failed to process your input: ${errMsg}`,
           timestamp: new Date(),
         },
       });

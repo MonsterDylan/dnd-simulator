@@ -53,10 +53,10 @@ export function DiceRoller() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center">
       {/* Popover */}
       {isOpen && (
-        <div className="absolute bottom-14 right-0 bg-dnd-surface border border-dnd-border rounded-xl p-4 shadow-xl w-64">
+        <div className="mb-2 bg-dnd-surface/95 backdrop-blur-sm border border-dnd-border rounded-xl p-4 shadow-xl w-64">
           <div className="text-sm font-bold text-dnd-gold mb-3">
             Dice Roller
           </div>
@@ -133,11 +133,11 @@ export function DiceRoller() {
       {/* Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-12 h-12 rounded-full bg-dnd-gold hover:bg-dnd-gold-light text-dnd-text-dark font-bold text-lg shadow-lg shadow-dnd-gold/30 transition-all ${
+        className={`w-11 h-11 rounded-full bg-dnd-gold hover:bg-dnd-gold-light text-dnd-text-dark font-bold text-sm shadow-lg shadow-dnd-gold/30 transition-all ${
           isOpen ? "rotate-45" : ""
         }`}
       >
-        {isOpen ? "+" : "D20"}
+        {isOpen ? "✕" : "D20"}
       </button>
     </div>
   );
