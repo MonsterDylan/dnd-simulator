@@ -190,6 +190,7 @@ export interface DmInputResponse {
   combatState?: CombatState;
   partyUpdates?: Record<string, Partial<Character>>;
   mapId?: string;
+  sceneChange?: string;
 }
 
 export interface RollDiceRequest {
@@ -250,4 +251,19 @@ export interface CampaignLoreRequest {
 export interface CampaignLoreResponse {
   answer: string;
   sources: { segment_id: string; content: string; type: string }[];
+}
+
+// AI Map Generation types
+export interface GenerateMapRequest {
+  action: "generate_map";
+  sessionId: string;
+  sceneDescription: string;
+  availableTerrainTypes: string[];
+  gridSize: number;
+}
+
+export interface GenerateMapResponse {
+  terrain: TerrainFeature[];
+  mapId: string;
+  description: string;
 }

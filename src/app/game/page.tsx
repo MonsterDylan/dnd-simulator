@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GameProvider, useGame } from "@/lib/GameContext";
 import { PARTY_COLORS } from "@/lib/helpers";
@@ -18,9 +18,11 @@ function GameContent() {
   const router = useRouter();
   const { state, dispatch } = useGame();
   const [isCampaignMode, setIsCampaignMode] = useState(false);
+  const initialized = useRef(false);
 
   // Load session from localStorage on mount
   useEffect(() => {
+    if (initialized.current) return;
     const stored = localStorage.getItem("dnd-session");
     if (!stored) {
       router.push("/");
@@ -28,8 +30,8 @@ function GameContent() {
     }
     try {
       const data = JSON.parse(stored);
+      initialized.current = true;
       setIsCampaignMode(!!data.campaignMode);
-      // Assign colors to party members
       const partyWithColors = data.party.map(
         (char: Record<string, unknown>, i: number) => ({
           ...char,
@@ -43,11 +45,10 @@ function GameContent() {
         scene: data.scene,
         voiceAssignments: data.voiceAssignments || {},
       });
-      // Add initial scene narration
       dispatch({
         type: "ADD_NARRATIVE",
         entry: {
-          id: `scene-intro-${Date.now()}`,
+          id: "scene-intro",
           type: "narration",
           content: data.scene.description,
           timestamp: new Date(),
@@ -116,11 +117,9 @@ function GameContent() {
 
       {/* Main Content: 3-panel layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Party + Reference Chat */}
-        <div className="w-72 bg-dnd-surface border-r border-dnd-border flex flex-col shrink-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto game-scroll">
-            <PartyPanel />
-          </div>
+        {/* Left Panel: Party + Tools (fully scrollable) */}
+        <div className="w-72 bg-dnd-surface border-r border-dnd-border flex flex-col shrink-0 overflow-y-auto game-scroll">
+          <PartyPanel />
           <SceneChanger />
           <TerrainPalette />
           {isCampaignMode && <CampaignLore />}

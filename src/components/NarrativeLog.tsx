@@ -5,10 +5,9 @@ import { v4 as uuidv4 } from "uuid";
 import { useGame } from "@/lib/GameContext";
 import { sendDmInput } from "@/lib/api";
 import type { NarrativeEntry } from "@/lib/types";
-import campaignData from "@/data/campaigns/campaign4-episode1.json";
-import type { CampaignEpisode } from "@/data/campaigns/campaign4-schema";
-
-const episode = campaignData as CampaignEpisode;
+import { getEpisode } from "@/data/campaigns";
+import { useSceneChangeDetection, SceneChangePrompt } from "./SceneChangePrompt";
+import { detectMapId, generateTerrainFromDescription } from "./SceneChanger";
 
 function NarrativeEntryView({ entry, npcImageUrl }: { entry: NarrativeEntry; npcImageUrl?: string }) {
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -131,21 +130,27 @@ export function NarrativeLog() {
   const { state, dispatch } = useGame();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sceneChange = useSceneChangeDetection();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.narrativeLog]);
 
-  const isCampaignMode = useMemo(() => {
+  const sessionData = useMemo(() => {
     try {
       const stored = localStorage.getItem("dnd-session");
-      return stored ? !!JSON.parse(stored).campaignMode : false;
-    } catch { return false; }
+      if (!stored) return null;
+      const data = JSON.parse(stored);
+      return { campaignMode: !!data.campaignMode, episodeNumber: data.episodeNumber ?? 1 };
+    } catch { return null; }
   }, []);
 
-  const campaignContext = useMemo(() => {
-    if (!isCampaignMode) return undefined;
+  const isCampaignMode = sessionData?.campaignMode ?? false;
 
+  const campaignContext = useMemo(() => {
+    if (!isCampaignMode || !sessionData) return undefined;
+
+    const episode = getEpisode(sessionData.episodeNumber);
     const charProfiles: Record<string, string> = {};
 
     for (const member of episode.cast) {
@@ -190,7 +195,7 @@ export function NarrativeLog() {
     ].join(", ");
 
     return { worldContext, charProfiles };
-  }, [isCampaignMode]);
+  }, [isCampaignMode, sessionData]);
 
   const handleSend = async () => {
     if (!input.trim() || state.isLoading) return;
@@ -328,6 +333,14 @@ export function NarrativeLog() {
           scene: { ...state.scene, mapId: response.mapId },
         });
       }
+
+      // Check for scene change in narrative
+      if (response.narrative) {
+        sceneChange.checkNarrative(
+          response.narrative,
+          response.sceneChange
+        );
+      }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       console.error("Failed to send DM input:", errMsg, error);
@@ -344,6 +357,27 @@ export function NarrativeLog() {
       dispatch({ type: "SET_LOADING", isLoading: false });
     }
   };
+
+  const handleAcceptSceneChange = useCallback(() => {
+    if (!sceneChange.pending) return;
+    const { description, mapId } = sceneChange.pending;
+    const terrain = generateTerrainFromDescription(description);
+    const resolvedMapId = detectMapId(description);
+    dispatch({
+      type: "SET_SCENE",
+      scene: { description, mapId: resolvedMapId, terrain },
+    });
+    dispatch({
+      type: "ADD_NARRATIVE",
+      entry: {
+        id: uuidv4(),
+        type: "system",
+        content: `Map updated to: ${sceneChange.pending.mapLabel}`,
+        timestamp: new Date(),
+      },
+    });
+    sceneChange.clear();
+  }, [sceneChange, dispatch]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -387,6 +421,15 @@ export function NarrativeLog() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Scene change prompt */}
+      {sceneChange.pending && (
+        <SceneChangePrompt
+          pending={sceneChange.pending}
+          onAccept={handleAcceptSceneChange}
+          onDismiss={sceneChange.dismiss}
+        />
+      )}
 
       {/* Input */}
       <div className="p-3 border-t border-dnd-border shrink-0">

@@ -47,6 +47,16 @@ export const MAP_NAMES: Record<string, string> = {
   forest: "Whispering Woods",
   cave: "Echoing Caverns",
   town: "Market Square",
+  house: "Interior",
+  street: "City Street",
+  underground: "Underground Chamber",
+  estate: "Noble Estate",
+  gallery: "Gallery",
+  marketplace: "Marketplace",
+  castle: "Castle",
+  temple: "Temple",
+  camp: "Campsite",
+  river: "Riverside",
 };
 
 // Dice expression helper

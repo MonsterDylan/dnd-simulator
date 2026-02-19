@@ -3,14 +3,12 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useGame } from "@/lib/GameContext";
 import { queryCampaignLore } from "@/lib/api";
-import campaignData from "@/data/campaigns/campaign4-episode1.json";
+import { getEpisode } from "@/data/campaigns";
 import type {
   CampaignEpisode,
   CampaignSegment,
   CastMember,
 } from "@/data/campaigns/campaign4-schema";
-
-const episode = campaignData as CampaignEpisode;
 
 type Tab = "browse" | "chat" | "cast";
 
@@ -120,13 +118,13 @@ function SegmentRow({ seg }: { seg: CampaignSegment }) {
   );
 }
 
-function CastCard({ member }: { member: CastMember }) {
+function CastCard({ member, segments }: { member: CastMember; segments: CampaignSegment[] }) {
   const segCount = useMemo(
     () =>
-      episode.segments.filter((s) =>
+      segments.filter((s) =>
         s.speaker.toLowerCase().includes(member.character.toLowerCase().split(" ")[0])
       ).length,
-    [member.character]
+    [member.character, segments]
   );
 
   return (
@@ -155,7 +153,7 @@ function CastCard({ member }: { member: CastMember }) {
   );
 }
 
-function CastTab() {
+function CastTab({ episode }: { episode: CampaignEpisode }) {
   return (
     <div className="space-y-2 p-3">
       <div className="flex items-center justify-between mb-2">
@@ -184,22 +182,22 @@ function CastTab() {
       </div>
 
       {episode.cast.map((member) => (
-        <CastCard key={member.character} member={member} />
+        <CastCard key={member.character} member={member} segments={episode.segments} />
       ))}
     </div>
   );
 }
 
-function StatsBar() {
+function StatsBar({ segments }: { segments: CampaignSegment[] }) {
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const s of episode.segments) {
+    for (const s of segments) {
       counts[s.type] = (counts[s.type] || 0) + 1;
     }
     return counts;
-  }, []);
+  }, [segments]);
 
-  const total = episode.segments.length;
+  const total = segments.length;
 
   return (
     <div className="flex gap-0.5 h-1.5 w-full rounded-full overflow-hidden bg-dnd-dark">
@@ -229,6 +227,18 @@ function StatsBar() {
 
 export default function CampaignLore() {
   const { state } = useGame();
+
+  const episode = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("dnd-session");
+      if (stored) {
+        const epNum = JSON.parse(stored).episodeNumber ?? 1;
+        return getEpisode(epNum);
+      }
+    } catch { /* fall through */ }
+    return getEpisode(1);
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [tab, setTab] = useState<Tab>("browse");
@@ -291,8 +301,8 @@ export default function CampaignLore() {
 
   const hasMore = pagedSegments.length < filteredSegments.length;
 
-  const handleChat = useCallback(async () => {
-    const q = chatInput.trim();
+  const handleChat = useCallback(async (directQuestion?: string) => {
+    const q = (directQuestion || chatInput).trim();
     if (!q || chatLoading) return;
     setChatInput("");
     setChatMessages((prev) => [...prev, { role: "user", content: q }]);
@@ -365,7 +375,7 @@ export default function CampaignLore() {
           </span>
         </div>
         <div className="mt-1">
-          <StatsBar />
+          <StatsBar segments={episode.segments} />
         </div>
         <div className="text-[9px] text-dnd-text-muted mt-1">
           E{episode.episode.number}: {episode.episode.title} ·{" "}
@@ -533,7 +543,7 @@ export default function CampaignLore() {
                     ].map((q) => (
                       <button
                         key={q}
-                        onClick={() => setChatInput(q)}
+                        onClick={() => handleChat(q)}
                         className="text-[9px] text-dnd-purple bg-dnd-purple/10 border border-dnd-purple/30 rounded-full px-2.5 py-1 hover:bg-dnd-purple/20 transition-colors"
                       >
                         {q}
@@ -610,7 +620,7 @@ export default function CampaignLore() {
                   disabled={chatLoading}
                 />
                 <button
-                  onClick={handleChat}
+                  onClick={() => handleChat()}
                   disabled={!chatInput.trim() || chatLoading}
                   className="shrink-0 bg-dnd-purple hover:bg-dnd-purple/80 disabled:opacity-40 text-white text-xs font-bold rounded px-3 py-1.5 transition-colors"
                 >
@@ -623,7 +633,7 @@ export default function CampaignLore() {
 
         {tab === "cast" && (
           <div className="flex-1 overflow-y-auto game-scroll min-h-0">
-            <CastTab />
+            <CastTab episode={episode} />
           </div>
         )}
       </div>

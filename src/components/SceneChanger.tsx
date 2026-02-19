@@ -4,13 +4,6 @@ import { useState } from "react";
 import { useGame } from "@/lib/GameContext";
 import type { TerrainFeature, TerrainType } from "@/lib/types";
 
-function mapImageUrl(description: string): string {
-  const prompt = encodeURIComponent(
-    `DnD tabletop RPG battle map ${description}, top-down tactical view, fantasy game art, detailed, dramatic lighting`
-  );
-  return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=800&nologo=true`;
-}
-
 const GRID = 16;
 
 function t(type: TerrainType, x: number, y: number, overrides?: Partial<TerrainFeature>): TerrainFeature {
@@ -239,48 +232,68 @@ function generateTownTerrain(): TerrainFeature[] {
   return features;
 }
 
-const PRESET_TERRAIN_GENERATORS: Record<string, () => TerrainFeature[]> = {
+export const PRESET_TERRAIN_GENERATORS: Record<string, () => TerrainFeature[]> = {
   tavern: generateTavernTerrain,
   dungeon: generateDungeonTerrain,
   forest: generateForestTerrain,
   cave: generateCaveTerrain,
   town: generateTownTerrain,
+  house: generateHouseInterior,
+  street: generateStreetAlley,
+  underground: generateUndergroundChamber,
+  estate: generateNobleEstate,
+  gallery: generateGalleryBalcony,
+  marketplace: generateMarketplace,
+  castle: generateCastleTerrain,
+  temple: generateTempleTerrain,
+  camp: generateCampTerrain,
+  river: generateRiverTerrain,
 };
 
-function generateTerrainFromDescription(description: string): TerrainFeature[] {
+export function detectMapId(description: string): string {
   const lower = description.toLowerCase();
 
-  // Match keywords to preset generators
+  // CR4-specific location matching (checked first)
+  const cr4Locations: [string[], string][] = [
+    [["fang home", "hal's home", "rookery", "family home", "apartment", "hideout", "hiding spot", "thjazi's"], "house"],
+    [["cobblestone", "street", "alley", "outside", "doorway", "carriage"], "street"],
+    [["underground", "chamber", "grate", "tannery", "sewer", "cellar"], "underground"],
+    [["noble", "estate", "royce", "manor", "mansion", "palace", "court"], "estate"],
+    [["gallery", "balcony", "execution", "viewing", "overlook", "box"], "gallery"],
+    [["marketplace", "bazaar", "market square", "stalls", "vendors"], "marketplace"],
+    [["guardian wall", "wall", "fortification", "rampart", "battlement"], "castle"],
+  ];
+
+  for (const [words, mapId] of cr4Locations) {
+    if (words.some((w) => lower.includes(w))) return mapId;
+  }
+
+  // General keyword matching
   const keywords: [string[], string][] = [
     [["tavern", "inn", "bar", "pub", "alehouse"], "tavern"],
     [["dungeon", "crypt", "tomb", "catacomb", "prison", "cell", "vault"], "dungeon"],
     [["forest", "wood", "grove", "glade", "jungle", "swamp"], "forest"],
-    [["cave", "cavern", "mine", "tunnel", "underground"], "cave"],
-    [["town", "village", "city", "market", "square", "street", "hamlet"], "town"],
+    [["cave", "cavern", "mine", "tunnel"], "cave"],
+    [["town", "village", "city", "hamlet", "dol-makjar"], "town"],
+    [["house", "home", "interior", "room", "cottage"], "house"],
+    [["castle", "fortress", "keep"], "castle"],
+    [["temple", "shrine", "church", "chapel"], "temple"],
+    [["camp", "clearing", "rest"], "camp"],
+    [["bridge", "river", "lake", "shore"], "river"],
+    [["market", "square"], "marketplace"],
   ];
 
-  for (const [words, presetKey] of keywords) {
-    if (words.some((w) => lower.includes(w))) {
-      const gen = PRESET_TERRAIN_GENERATORS[presetKey];
-      if (gen) return gen();
-    }
+  for (const [words, mapId] of keywords) {
+    if (words.some((w) => lower.includes(w))) return mapId;
   }
 
-  // Specific terrain types for other descriptions
-  if (lower.includes("castle") || lower.includes("fortress") || lower.includes("keep")) {
-    return generateCastleTerrain();
-  }
-  if (lower.includes("temple") || lower.includes("shrine") || lower.includes("church") || lower.includes("chapel")) {
-    return generateTempleTerrain();
-  }
-  if (lower.includes("camp") || lower.includes("clearing") || lower.includes("rest")) {
-    return generateCampTerrain();
-  }
-  if (lower.includes("bridge") || lower.includes("river") || lower.includes("lake") || lower.includes("shore")) {
-    return generateRiverTerrain();
-  }
+  return "town";
+}
 
-  // Fallback: sparse generic terrain
+export function generateTerrainFromDescription(description: string): TerrainFeature[] {
+  const mapId = detectMapId(description);
+  const gen = PRESET_TERRAIN_GENERATORS[mapId];
+  if (gen) return gen();
   return generateGenericTerrain();
 }
 
@@ -397,6 +410,312 @@ function generateRiverTerrain(): TerrainFeature[] {
   return features;
 }
 
+function generateHouseInterior(): TerrainFeature[] {
+  const features: TerrainFeature[] = [];
+  // Outer walls of the house
+  features.push(...wallRect(1, 1, 14, 14, [[7, 14]]));
+  // Internal dividing wall (bedroom / main room)
+  for (let x = 1; x <= 9; x++) features.push(t("wall", x, 7));
+  features.push(t("door", 5, 7));
+  // Internal dividing wall (study / hallway)
+  for (let y = 7; y <= 14; y++) features.push(t("wall", 9, y));
+  features.push(t("door", 9, 10));
+  // Bedroom (top-left quadrant)
+  features.push(t("bed", 2, 2));
+  features.push(t("bed", 2, 3));
+  features.push(t("bookshelf", 4, 2));
+  features.push(t("chest", 5, 2));
+  features.push(t("table", 7, 4));
+  features.push(t("chair", 6, 4));
+  features.push(t("chair", 8, 4));
+  // Fireplace along top wall
+  features.push(t("fire", 12, 2));
+  features.push(t("fire", 13, 2));
+  features.push(t("rock", 11, 2));
+  // Living area (top-right)
+  features.push(t("table", 11, 4));
+  features.push(t("chair", 10, 4));
+  features.push(t("chair", 12, 4));
+  features.push(t("chair", 11, 5));
+  features.push(t("bookshelf", 13, 5));
+  features.push(t("bookshelf", 13, 6));
+  // Kitchen/pantry (bottom-left)
+  features.push(t("table", 3, 9));
+  features.push(t("table", 4, 9));
+  features.push(t("barrel", 2, 8));
+  features.push(t("barrel", 2, 9));
+  features.push(t("chair", 3, 10));
+  features.push(t("chair", 5, 10));
+  features.push(t("chest", 7, 8));
+  // Study/den (bottom-right)
+  features.push(t("bookshelf", 10, 8));
+  features.push(t("bookshelf", 11, 8));
+  features.push(t("table", 12, 10));
+  features.push(t("chair", 11, 10));
+  features.push(t("chair", 13, 10));
+  features.push(t("chest", 13, 12));
+  // Hallway details
+  features.push(t("barrel", 6, 12));
+  features.push(t("stairs_up", 8, 12));
+  return features;
+}
+
+function generateStreetAlley(): TerrainFeature[] {
+  const features: TerrainFeature[] = [];
+  // Left building facades (solid walls)
+  features.push(...wallRect(0, 0, 3, 6));
+  features.push(...wallRect(0, 9, 3, 15));
+  // Right building facades
+  features.push(...wallRect(12, 0, 15, 6));
+  features.push(...wallRect(12, 9, 15, 15));
+  // Doorways into buildings
+  features.push(t("door", 3, 3));
+  features.push(t("door", 3, 12));
+  features.push(t("door", 12, 4));
+  features.push(t("door", 12, 11));
+  // Market stalls on left side of street
+  features.push(t("table", 5, 2));
+  features.push(t("table", 5, 3));
+  features.push(t("barrel", 5, 4));
+  features.push(t("chest", 6, 2));
+  // Market stalls on right side of street
+  features.push(t("table", 10, 3));
+  features.push(t("table", 10, 4));
+  features.push(t("barrel", 11, 3));
+  // Street-level details
+  features.push(t("barrel", 4, 7));
+  features.push(t("barrel", 4, 8));
+  features.push(t("barrel", 11, 7));
+  features.push(t("chest", 11, 8));
+  // Bushes / planters along the street
+  features.push(t("bush", 6, 6));
+  features.push(t("bush", 9, 6));
+  features.push(t("bush", 6, 10));
+  features.push(t("bush", 9, 10));
+  // Lower street area details
+  features.push(t("table", 5, 12));
+  features.push(t("barrel", 6, 13));
+  features.push(t("table", 10, 12));
+  features.push(t("barrel", 10, 13));
+  // Lamp posts / pillars
+  features.push(t("pillar", 7, 1));
+  features.push(t("pillar", 8, 8));
+  features.push(t("pillar", 7, 14));
+  // Rocks / cobblestone debris
+  features.push(t("rock", 8, 5));
+  features.push(t("rubble", 9, 13));
+  return features;
+}
+
+function generateUndergroundChamber(): TerrainFeature[] {
+  const features: TerrainFeature[] = [];
+  // Irregular rock walls forming a rough chamber
+  const wallCells = new Set<string>();
+  for (let x = 0; x <= 15; x++) {
+    for (let y = 0; y <= 15; y++) {
+      const dx = x - 8;
+      const dy = y - 8;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const noise = Math.sin(x * 1.7) * Math.cos(y * 1.1) * 1.2 + Math.sin((x + y) * 0.8) * 0.8;
+      if (dist + noise > 7) {
+        wallCells.add(`${x},${y}`);
+      }
+    }
+  }
+  // Entrance corridor from south
+  for (let y = 13; y <= 15; y++) {
+    for (let x = 7; x <= 9; x++) wallCells.delete(`${x},${y}`);
+  }
+  for (const key of wallCells) {
+    const [x, y] = key.split(",").map(Number);
+    features.push(t("rock", x, y));
+  }
+  // Pillars supporting the ceiling
+  features.push(t("pillar", 5, 5));
+  features.push(t("pillar", 11, 5));
+  features.push(t("pillar", 5, 10));
+  features.push(t("pillar", 11, 10));
+  features.push(t("pillar", 8, 7));
+  // Central grate / stairs down
+  features.push(t("stairs_down", 8, 5));
+  features.push(t("rubble", 7, 4));
+  features.push(t("rubble", 9, 4));
+  features.push(t("rubble", 6, 6));
+  features.push(t("rubble", 10, 6));
+  // Hidden alcove with treasure (NW)
+  features.push(t("chest", 4, 3));
+  features.push(t("chest", 5, 3));
+  // Barrels and crates (supplies stash)
+  features.push(t("barrel", 10, 8));
+  features.push(t("barrel", 11, 8));
+  features.push(t("chest", 10, 9));
+  // Table where hideout planning happens
+  features.push(t("table", 7, 9));
+  features.push(t("chair", 6, 9));
+  features.push(t("chair", 8, 9));
+  // Trap guarding the entrance
+  features.push(t("trap", 8, 12));
+  // Water seepage
+  features.push(t("water", 4, 8));
+  features.push(t("water", 4, 9));
+  return features;
+}
+
+function generateNobleEstate(): TerrainFeature[] {
+  const features: TerrainFeature[] = [];
+  // Grand outer walls
+  features.push(...wallRect(0, 0, 15, 15, [[7, 15], [8, 15]]));
+  // Grand hall (top half)
+  features.push(...wallRect(1, 1, 14, 8, [[7, 8], [8, 8]]));
+  // Pillars flanking the grand hall
+  features.push(t("pillar", 3, 3));
+  features.push(t("pillar", 12, 3));
+  features.push(t("pillar", 3, 6));
+  features.push(t("pillar", 12, 6));
+  // Altar / throne area at far end
+  features.push(t("altar", 7, 2));
+  features.push(t("altar", 8, 2));
+  features.push(t("statue", 5, 2));
+  features.push(t("statue", 10, 2));
+  // Bookshelves in grand hall
+  features.push(t("bookshelf", 2, 2));
+  features.push(t("bookshelf", 2, 3));
+  features.push(t("bookshelf", 13, 2));
+  features.push(t("bookshelf", 13, 3));
+  // Chairs arranged for audience
+  for (let x = 5; x <= 10; x += 1) {
+    features.push(t("chair", x, 5));
+    features.push(t("chair", x, 6));
+  }
+  // Private quarters (bottom-left)
+  features.push(...wallRect(1, 9, 6, 14, [[4, 9]]));
+  features.push(t("bed", 2, 10));
+  features.push(t("bed", 2, 11));
+  features.push(t("table", 4, 12));
+  features.push(t("chair", 3, 12));
+  features.push(t("chair", 5, 12));
+  features.push(t("bookshelf", 5, 10));
+  features.push(t("chest", 2, 13));
+  // Balcony / open terrace (bottom-right, no interior walls)
+  features.push(t("pillar", 8, 10));
+  features.push(t("pillar", 14, 10));
+  features.push(t("pillar", 8, 14));
+  features.push(t("pillar", 14, 14));
+  features.push(t("fountain", 11, 12));
+  features.push(t("bush", 9, 11));
+  features.push(t("bush", 13, 11));
+  features.push(t("stairs_up", 14, 9));
+  return features;
+}
+
+function generateGalleryBalcony(): TerrainFeature[] {
+  const features: TerrainFeature[] = [];
+  // Three-sided walls (open front = south side)
+  for (let x = 0; x <= 15; x++) {
+    features.push(t("wall", x, 0)); // north wall
+  }
+  for (let y = 0; y <= 12; y++) {
+    features.push(t("wall", 0, y)); // west wall
+    features.push(t("wall", 15, y)); // east wall
+  }
+  // Partial railing along the open south edge
+  for (let x = 0; x <= 3; x++) features.push(t("wall", x, 12));
+  for (let x = 12; x <= 15; x++) features.push(t("wall", x, 12));
+  // Pillars along the open balcony edge
+  features.push(t("pillar", 4, 12));
+  features.push(t("pillar", 7, 12));
+  features.push(t("pillar", 8, 12));
+  features.push(t("pillar", 11, 12));
+  // Viewing rows of chairs (3 rows)
+  for (let x = 2; x <= 13; x += 1) {
+    features.push(t("chair", x, 4));
+  }
+  for (let x = 2; x <= 13; x += 1) {
+    features.push(t("chair", x, 6));
+  }
+  for (let x = 2; x <= 13; x += 1) {
+    features.push(t("chair", x, 8));
+  }
+  // Aisle pillars
+  features.push(t("pillar", 1, 3));
+  features.push(t("pillar", 14, 3));
+  features.push(t("pillar", 1, 7));
+  features.push(t("pillar", 14, 7));
+  // Back area (behind seats)
+  features.push(t("table", 3, 1));
+  features.push(t("table", 12, 1));
+  features.push(t("barrel", 1, 1));
+  features.push(t("barrel", 14, 1));
+  // Side details
+  features.push(t("bookshelf", 1, 5));
+  features.push(t("bookshelf", 14, 5));
+  // Open courtyard below (south of railing) - sparse
+  features.push(t("rock", 5, 14));
+  features.push(t("rock", 10, 14));
+  features.push(t("bush", 3, 15));
+  features.push(t("bush", 12, 15));
+  features.push(t("statue", 8, 15));
+  return features;
+}
+
+function generateMarketplace(): TerrainFeature[] {
+  const features: TerrainFeature[] = [];
+  // Central fountain
+  features.push(t("fountain", 7, 7));
+  features.push(t("fountain", 8, 7));
+  features.push(t("fountain", 7, 8));
+  features.push(t("fountain", 8, 8));
+  // NW stall cluster
+  features.push(t("table", 2, 2));
+  features.push(t("table", 3, 2));
+  features.push(t("barrel", 2, 3));
+  features.push(t("chest", 4, 2));
+  features.push(t("barrel", 4, 3));
+  // NE stall cluster
+  features.push(t("table", 11, 2));
+  features.push(t("table", 12, 2));
+  features.push(t("barrel", 13, 2));
+  features.push(t("chest", 11, 3));
+  features.push(t("barrel", 13, 3));
+  // SW stall cluster
+  features.push(t("table", 2, 12));
+  features.push(t("table", 3, 12));
+  features.push(t("barrel", 2, 13));
+  features.push(t("chest", 4, 13));
+  features.push(t("barrel", 4, 12));
+  // SE stall cluster
+  features.push(t("table", 11, 12));
+  features.push(t("table", 12, 12));
+  features.push(t("barrel", 13, 12));
+  features.push(t("chest", 12, 13));
+  features.push(t("barrel", 11, 13));
+  // Central walkway stalls (east-west)
+  features.push(t("table", 5, 5));
+  features.push(t("table", 10, 5));
+  features.push(t("table", 5, 10));
+  features.push(t("table", 10, 10));
+  // Trees lining the perimeter
+  features.push(t("tree", 0, 0));
+  features.push(t("tree", 7, 0));
+  features.push(t("tree", 15, 0));
+  features.push(t("tree", 0, 7));
+  features.push(t("tree", 15, 7));
+  features.push(t("tree", 0, 15));
+  features.push(t("tree", 7, 15));
+  features.push(t("tree", 15, 15));
+  // Bushes
+  features.push(t("bush", 1, 7));
+  features.push(t("bush", 14, 7));
+  features.push(t("bush", 7, 1));
+  features.push(t("bush", 7, 14));
+  // Crates (as chests) near entrances
+  features.push(t("chest", 0, 4));
+  features.push(t("chest", 15, 4));
+  features.push(t("chest", 0, 11));
+  features.push(t("chest", 15, 11));
+  return features;
+}
+
 function generateGenericTerrain(): TerrainFeature[] {
   const features: TerrainFeature[] = [];
   // A few scattered rocks and bushes
@@ -418,6 +737,16 @@ const PRESETS = [
   { label: "Forest", mapId: "forest" },
   { label: "Cave", mapId: "cave" },
   { label: "Town", mapId: "town" },
+  { label: "House", mapId: "house" },
+  { label: "Street", mapId: "street" },
+  { label: "Underground", mapId: "underground" },
+  { label: "Estate", mapId: "estate" },
+  { label: "Gallery", mapId: "gallery" },
+  { label: "Marketplace", mapId: "marketplace" },
+  { label: "Castle", mapId: "castle" },
+  { label: "Temple", mapId: "temple" },
+  { label: "Camp", mapId: "camp" },
+  { label: "River", mapId: "river" },
 ];
 
 export default function SceneChanger() {
@@ -428,9 +757,10 @@ export default function SceneChanger() {
     const d = description.trim();
     if (!d) return;
     const terrain = generateTerrainFromDescription(d);
+    const mapId = detectMapId(d);
     dispatch({
       type: "SET_SCENE",
-      scene: { description: d, mapId: mapImageUrl(d), terrain },
+      scene: { description: d, mapId, terrain },
     });
     setDescription("");
   }

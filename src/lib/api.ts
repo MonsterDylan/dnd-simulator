@@ -10,6 +10,9 @@ import type {
   LookupResponse,
   CampaignLoreRequest,
   CampaignLoreResponse,
+  GenerateMapRequest,
+  GenerateMapResponse,
+  TerrainType,
 } from "./types";
 
 const WEBHOOK_URL = process.env.NEXT_PUBLIC_WEBHOOK_URL!;
@@ -93,4 +96,25 @@ export async function queryCampaignLore(
     campaignNumber,
     episodeNumber,
   } satisfies CampaignLoreRequest);
+}
+
+const ALL_TERRAIN_TYPES: TerrainType[] = [
+  "wall", "door", "door_open", "table", "chair", "water", "deep_water",
+  "lava", "pit", "pillar", "tree", "bush", "rock", "chest", "stairs_up",
+  "stairs_down", "trap", "fire", "barrel", "bookshelf", "bed", "rubble",
+  "ice", "bridge", "altar", "statue", "fountain",
+];
+
+export async function generateMap(
+  sessionId: string,
+  sceneDescription: string,
+  gridSize = 16
+): Promise<GenerateMapResponse> {
+  return webhookFetch<GenerateMapResponse>({
+    action: "generate_map",
+    sessionId,
+    sceneDescription,
+    availableTerrainTypes: ALL_TERRAIN_TYPES,
+    gridSize,
+  } satisfies GenerateMapRequest);
 }
