@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { generateParty } from "@/lib/api";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CampaignCharacterSelect } from "@/components/CampaignCharacterSelect";
-import { PARTY_COLORS } from "@/lib/helpers";
+import { PARTY_COLORS, CR4_CHARACTER_ART } from "@/lib/helpers";
 import type { Character, Scene, InventoryItem } from "@/lib/types";
 import campaignData from "@/data/campaigns/campaign4-episode1.json";
 import campaignIndex from "@/data/campaigns/campaign4-index.json";
@@ -149,7 +149,7 @@ function buildCampaignParty(selectedCast: CastMember[], selectedEp: number): { p
       position: [3 + i * 2, 8] as [number, number],
       voiceId,
       color: PARTY_COLORS[i % PARTY_COLORS.length],
-      imageUrl: charImageUrl(race, primaryClass, member.character),
+      imageUrl: CR4_CHARACTER_ART[member.character] || charImageUrl(race, primaryClass, member.character),
     };
 
     party.push(char);

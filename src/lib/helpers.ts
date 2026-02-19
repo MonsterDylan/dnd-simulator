@@ -23,6 +23,23 @@ export const PARTY_COLORS = [
   "#E11D48", // rose
 ];
 
+// Official Critical Role Campaign 4 character art (by Solelle & Hannah Friederichs)
+export const CR4_CHARACTER_ART: Record<string, string> = {
+  "Thimble": "https://static.wikitide.net/criticalrolewiki/c/c3/Thimble_-_Solelle.jpg",
+  "Azune Nayar": "https://static.wikitide.net/criticalrolewiki/8/82/Azune_Nayar_-_Solelle.jpg",
+  "Kattigan Vale": "https://static.wikitide.net/criticalrolewiki/f/f6/Kattigan_Vale_-_Solelle.jpg",
+  "Thaisha Lloy": "https://static.wikitide.net/criticalrolewiki/1/1c/Thaisha_Lloy_-_Solelle.jpg",
+  "Bolaire Lathalia": "https://static.wikitide.net/criticalrolewiki/3/31/Bolaire_Lathalia_-_Solelle.jpg",
+  "Vaelus": "https://static.wikitide.net/criticalrolewiki/1/1e/Vaelus_-_Solelle.jpg",
+  "Sir Julien Davinos": "https://static.wikitide.net/criticalrolewiki/1/1a/Julien_Davinos_-_Solelle.jpg",
+  "Tyranny": "https://static.wikitide.net/criticalrolewiki/1/17/Tyranny_-_Solelle.jpg",
+  "Halandil Fang": "https://static.wikitide.net/criticalrolewiki/6/6d/Halandil_Fang_-_Solelle.jpg",
+  "Murray Mag'Nesson": "https://static.wikitide.net/criticalrolewiki/8/84/Murray_Mag%27nesson_-_Solelle.jpg",
+  "Wicander Halovar": "https://static.wikitide.net/criticalrolewiki/e/e9/Wicander_Halovar_-_Solelle.jpg",
+  "Occtis Tachonis": "https://static.wikitide.net/criticalrolewiki/6/63/Occtis_Tachonis_-_Solelle.jpg",
+  "Teor Pridesire": "https://static.wikitide.net/criticalrolewiki/e/e0/Teor_Pridesire_-_Solelle.jpg",
+};
+
 // Map display names
 export const MAP_NAMES: Record<string, string> = {
   tavern: "The Rusty Flagon Tavern",

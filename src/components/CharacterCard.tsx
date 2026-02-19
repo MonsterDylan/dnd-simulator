@@ -24,12 +24,21 @@ export function CharacterCard({
     <div className="bg-dnd-surface border border-dnd-border rounded-xl p-5 flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
-          style={{ backgroundColor: color }}
-        >
-          {character.name[0]}
-        </div>
+        {character.imageUrl ? (
+          <img
+            src={character.imageUrl}
+            alt={character.name}
+            className="w-12 h-12 rounded-full object-cover border-2 shrink-0"
+            style={{ borderColor: color }}
+          />
+        ) : (
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
+            style={{ backgroundColor: color }}
+          >
+            {character.name[0]}
+          </div>
+        )}
         <div className="min-w-0">
           <h3 className="text-dnd-text font-semibold text-lg truncate">
             {character.name}

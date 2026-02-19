@@ -2,14 +2,10 @@
 
 import { useState, useMemo } from "react";
 import type { CastMember } from "@/data/campaigns/campaign4-schema";
+import { CR4_CHARACTER_ART } from "@/lib/helpers";
 
 const MIN_PARTY = 2;
 const MAX_PARTY = 12;
-
-function charImageUrl(name: string): string {
-  const seed = encodeURIComponent(name);
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
-}
 
 const CLASS_ICONS: Record<string, string> = {
   Fighter: "⚔️",
@@ -170,7 +166,7 @@ export function CampaignCharacterSelect({
                   }`}
                 >
                   <img
-                    src={charImageUrl(member.character)}
+                    src={CR4_CHARACTER_ART[member.character] || ""}
                     alt={member.character}
                     className="w-full h-full object-cover"
                     loading="lazy"

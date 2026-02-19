@@ -10,7 +10,7 @@ import type { CampaignEpisode } from "@/data/campaigns/campaign4-schema";
 
 const episode = campaignData as CampaignEpisode;
 
-function NarrativeEntryView({ entry }: { entry: NarrativeEntry }) {
+function NarrativeEntryView({ entry, npcImageUrl }: { entry: NarrativeEntry; npcImageUrl?: string }) {
   const [audioPlaying, setAudioPlaying] = useState(false);
 
   const playAudio = useCallback(() => {
@@ -49,12 +49,21 @@ function NarrativeEntryView({ entry }: { entry: NarrativeEntry }) {
     case "npc_dialogue":
       return (
         <div className="flex items-start gap-2">
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mt-1"
-            style={{ backgroundColor: entry.npcColor || "#6B7280" }}
-          >
-            {entry.npcName?.[0] || "?"}
-          </div>
+          {npcImageUrl ? (
+            <img
+              src={npcImageUrl}
+              alt={entry.npcName || "NPC"}
+              className="w-7 h-7 rounded-full object-cover border-2 shrink-0 mt-1"
+              style={{ borderColor: entry.npcColor || "#6B7280" }}
+            />
+          ) : (
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mt-1"
+              style={{ backgroundColor: entry.npcColor || "#6B7280" }}
+            >
+              {entry.npcName?.[0] || "?"}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <span
@@ -352,9 +361,18 @@ export function NarrativeLog() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 game-scroll">
-        {state.narrativeLog.map((entry) => (
-          <NarrativeEntryView key={entry.id} entry={entry} />
-        ))}
+        {state.narrativeLog.map((entry) => {
+          const npcChar = entry.npcName
+            ? state.party.find((c) => c.name === entry.npcName)
+            : undefined;
+          return (
+            <NarrativeEntryView
+              key={entry.id}
+              entry={entry}
+              npcImageUrl={npcChar?.imageUrl}
+            />
+          );
+        })}
 
         {state.isLoading && (
           <div className="flex items-center gap-2 px-3 py-2">

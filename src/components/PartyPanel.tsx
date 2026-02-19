@@ -44,12 +44,21 @@ function CharacterAccordion({ character }: { character: Character }) {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full px-4 py-3 flex items-center gap-3 hover:bg-dnd-muted/50 transition-colors"
       >
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-          style={{ backgroundColor: character.color }}
-        >
-          {character.name[0]}
-        </div>
+        {character.imageUrl ? (
+          <img
+            src={character.imageUrl}
+            alt={character.name}
+            className="w-8 h-8 rounded-full object-cover border-2 shrink-0"
+            style={{ borderColor: character.color }}
+          />
+        ) : (
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+            style={{ backgroundColor: character.color }}
+          >
+            {character.name[0]}
+          </div>
+        )}
         <div className="flex-1 text-left min-w-0">
           <div className="text-sm font-medium text-dnd-text truncate">
             {character.name}
