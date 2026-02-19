@@ -8,32 +8,51 @@ import { CampaignCharacterSelect } from "@/components/CampaignCharacterSelect";
 import { PARTY_COLORS } from "@/lib/helpers";
 import type { Character, Scene, InventoryItem } from "@/lib/types";
 import campaignData from "@/data/campaigns/campaign4-episode1.json";
+import campaignIndex from "@/data/campaigns/campaign4-index.json";
 import type { CampaignEpisode, CastMember } from "@/data/campaigns/campaign4-schema";
 
 const episode = campaignData as CampaignEpisode;
+const CAMPAIGN_EPISODES = campaignIndex.episodes;
 
-function charImageUrl(race: string, cls: string, name: string): string {
-  const prompt = encodeURIComponent(
-    `fantasy DnD 5e portrait ${race} ${cls}, RPG character game art, detailed illustration, front view, portrait crop, vibrant colors`
-  );
-  const seed = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${seed}`;
+function charImageUrl(_race: string, _cls: string, name: string): string {
+  const seed = encodeURIComponent(name);
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 }
 
-const VOICE_POOL = [
+const MALE_VOICES = [
   { id: "SOYHLrjzK2X1ezoPC6cr", name: "Harry" },
   { id: "JBFqnCBsd6RMkjVDRZzb", name: "George" },
   { id: "N2lVS1w4EtoT3dr4eOWO", name: "Callum" },
   { id: "IKne3meq5aSn9XLyUdCD", name: "Charlie" },
   { id: "TX3LPaxmHKxFdv7VOQHJ", name: "Liam" },
   { id: "pqHfZKP75CvOlQylNhV4", name: "Bill" },
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah" },
-  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte" },
-  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily" },
   { id: "bIHbv24MWmeRgasZH58o", name: "Will" },
   { id: "onwK4e9ZLuTAKqWW03F9", name: "Daniel" },
   { id: "g5CIjZEefAph4nQFvHAz", name: "Ethan" },
 ];
+
+const FEMALE_VOICES = [
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah" },
+  { id: "XB0fDUnXU5powFXDhCwa", name: "Charlotte" },
+  { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily" },
+];
+
+// Player name → gender for correct voice assignment
+const PLAYER_GENDER: Record<string, "male" | "female"> = {
+  "Laura Bailey": "female",
+  "Luis Carazo": "male",
+  "Robbie Daymond": "male",
+  "Aabria Iyengar": "female",
+  "Taliesin Jaffe": "male",
+  "Ashley Johnson": "female",
+  "Matthew Mercer": "male",
+  "Whitney Moore": "female",
+  "Liam O'Brien": "male",
+  "Marisha Ray": "female",
+  "Sam Riegel": "male",
+  "Alexander Ward": "male",
+  "Travis Willingham": "male",
+};
 
 function uid() {
   return "xxxx-xxxx-xxxx".replace(/x/g, () =>
@@ -71,7 +90,7 @@ const CLASS_GEAR: Record<string, InventoryItem[]> = {
   Monk:      [{ name: "Shortsword", quantity: 1, type: "weapon" }, { name: "Dart", quantity: 10, type: "weapon" }, { name: "Explorer's Pack", quantity: 1, type: "gear" }],
 };
 
-function buildCampaignParty(selectedCast: CastMember[]): { party: Character[]; sessionId: string; scene: Scene; voiceAssignments: Record<string, string> } {
+function buildCampaignParty(selectedCast: CastMember[], selectedEp: number): { party: Character[]; sessionId: string; scene: Scene; voiceAssignments: Record<string, string> } {
   const sessionId = uid() + "-" + uid();
   const party: Character[] = [];
   const voiceAssignments: Record<string, string> = {};
@@ -95,7 +114,12 @@ function buildCampaignParty(selectedCast: CastMember[]): { party: Character[]; s
     else if (primaryClass === "Barbarian") ac = 10 + mod(abilities.dexterity) + mod(abilities.constitution);
 
     const speed = race === "Dwarf" || race === "Halfling" || race === "Gnome" ? 25 : 30;
-    const voiceId = VOICE_POOL[i % VOICE_POOL.length].id;
+    const gender = PLAYER_GENDER[member.player] || "male";
+    const voicePool = gender === "female" ? FEMALE_VOICES : MALE_VOICES;
+    const poolIndex = gender === "female"
+      ? selectedCast.filter((m, j) => j < i && PLAYER_GENDER[m.player] === "female").length
+      : selectedCast.filter((m, j) => j < i && PLAYER_GENDER[m.player] !== "female").length;
+    const voiceId = voicePool[poolIndex % voicePool.length].id;
 
     const gear = CLASS_GEAR[primaryClass] || CLASS_GEAR.Fighter;
     const inventory: InventoryItem[] = [
@@ -132,16 +156,17 @@ function buildCampaignParty(selectedCast: CastMember[]): { party: Character[]; s
     voiceAssignments[member.character] = voiceId;
   }
 
+  const ep = CAMPAIGN_EPISODES.find(e => e.number === selectedEp) ?? CAMPAIGN_EPISODES[0];
   const scene: Scene = {
-    description: `The city of Dol-Makjar is heavy with tension. Word has spread that the war hero Thjazi Fang is to be executed today. Friends, family, and enemies gather in the square as the orcish custom of farramh begins. The air is thick with grief, political intrigue, and the weight of secrets yet to surface...`,
-    mapId: "town",
+    description: ep.scene_description,
+    mapId: ep.scene_map,
     terrain: [],
   };
 
   return { party, sessionId, scene, voiceAssignments };
 }
 
-type GameMode = null | "random" | "campaign_select" | "campaign";
+type GameMode = null | "random" | "campaign_episode" | "campaign_select" | "campaign";
 
 export default function Home() {
   const router = useRouter();
@@ -152,6 +177,7 @@ export default function Home() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [mode, setMode] = useState<GameMode>(null);
+  const [selectedEpisode, setSelectedEpisode] = useState(1);
 
   const handleGenerateRandom = async () => {
     setMode("random");
@@ -176,8 +202,13 @@ export default function Home() {
   };
 
   const handleCampaignSelect = () => {
-    setMode("campaign_select");
+    setMode("campaign_episode");
     setError("");
+  };
+
+  const handleEpisodeConfirm = (epNum: number) => {
+    setSelectedEpisode(epNum);
+    setMode("campaign_select");
   };
 
   const handleConfirmCampaignParty = (selected: CastMember[]) => {
@@ -185,7 +216,7 @@ export default function Home() {
     setIsGenerating(true);
     setError("");
     try {
-      const result = buildCampaignParty(selected);
+      const result = buildCampaignParty(selected, selectedEpisode);
       setParty(result.party);
       setSessionId(result.sessionId);
       setScene(result.scene);
@@ -201,7 +232,7 @@ export default function Home() {
   const handleStartGame = () => {
     localStorage.setItem(
       "dnd-session",
-      JSON.stringify({ sessionId, party, scene, voiceAssignments, campaignMode: mode === "campaign" })
+      JSON.stringify({ sessionId, party, scene, voiceAssignments, campaignMode: mode === "campaign", episodeNumber: selectedEpisode })
     );
     router.push("/game");
   };
@@ -220,7 +251,7 @@ export default function Home() {
       </div>
 
       {/* Mode Selection */}
-      {party.length === 0 && !isGenerating && mode !== "campaign_select" && (
+      {party.length === 0 && !isGenerating && mode !== "campaign_select" && mode !== "campaign_episode" && (
         <div className="flex flex-col items-center gap-4">
           <div className="flex gap-4">
             <button
@@ -246,13 +277,62 @@ export default function Home() {
         </div>
       )}
 
+      {/* Episode Selection */}
+      {mode === "campaign_episode" && (
+        <div className="w-full max-w-4xl mt-6">
+          <h2 className="text-2xl font-bold text-dnd-gold mb-2 text-center">Select Episode</h2>
+          <p className="text-dnd-text-muted text-sm text-center mb-6">
+            Choose which episode to start your campaign from. Each episode picks up where the story left off.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            {CAMPAIGN_EPISODES.map((ep) => (
+              <button
+                key={ep.number}
+                onClick={() => handleEpisodeConfirm(ep.number)}
+                disabled={!ep.available}
+                className={`text-left p-4 rounded-xl border transition-all ${
+                  !ep.available
+                    ? "border-dnd-border/30 opacity-40 cursor-not-allowed"
+                    : "border-dnd-border hover:border-dnd-gold hover:shadow-lg hover:shadow-dnd-gold/10 cursor-pointer"
+                }`}
+              >
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-dnd-gold font-bold text-lg">EP {ep.number}</span>
+                  <span className="text-dnd-text font-semibold text-sm">{ep.title}</span>
+                  <span className="ml-auto text-dnd-text-muted text-xs">{ep.duration}</span>
+                </div>
+                <p className="text-dnd-text-muted text-xs leading-relaxed line-clamp-2">
+                  {ep.scene_description}
+                </p>
+                {!ep.available && (
+                  <span className="text-dnd-text-muted text-xs italic mt-1 block">Processing...</span>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <button
+              onClick={() => { setMode(null); setError(""); }}
+              className="border border-dnd-border text-dnd-text-muted hover:text-dnd-text hover:border-dnd-gold px-6 py-3 rounded-xl transition-colors"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Campaign Character Selection */}
       {mode === "campaign_select" && (
         <div className="w-full mt-6">
+          <div className="text-center mb-4">
+            <p className="text-dnd-purple text-sm">
+              Episode {selectedEpisode}: {CAMPAIGN_EPISODES.find(e => e.number === selectedEpisode)?.title}
+            </p>
+          </div>
           <CampaignCharacterSelect
             cast={episode.cast}
             onConfirm={handleConfirmCampaignParty}
-            onBack={() => { setMode(null); setError(""); }}
+            onBack={() => { setMode("campaign_episode"); setError(""); }}
           />
         </div>
       )}
@@ -280,7 +360,7 @@ export default function Home() {
           </h2>
           {mode === "campaign" && (
             <p className="text-center text-xs text-dnd-purple mb-4">
-              Critical Role Campaign 4 — {episode.episode.title} — Dol-Makjar, Aramán
+              Critical Role Campaign 4 — Episode {selectedEpisode}: {CAMPAIGN_EPISODES.find(e => e.number === selectedEpisode)?.title ?? episode.episode.title} — Aramán
             </p>
           )}
           <div className={`grid grid-cols-1 gap-4 mb-8 ${

@@ -6,12 +6,9 @@ import type { CastMember } from "@/data/campaigns/campaign4-schema";
 const MIN_PARTY = 2;
 const MAX_PARTY = 12;
 
-function charImageUrl(race: string, cls: string, name: string): string {
-  const prompt = encodeURIComponent(
-    `fantasy DnD 5e portrait ${race} ${cls}, RPG character game art, detailed illustration, front view, portrait crop, vibrant colors`
-  );
-  const seed = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return `https://image.pollinations.ai/prompt/${prompt}?width=256&height=256&nologo=true&seed=${seed}`;
+function charImageUrl(name: string): string {
+  const seed = encodeURIComponent(name);
+  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
 }
 
 const CLASS_ICONS: Record<string, string> = {
@@ -139,10 +136,6 @@ export function CampaignCharacterSelect({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         {cast.map((member, i) => {
           const isSelected = selectedIds.has(i);
-          const primaryClass = (member.class || "Fighter")
-            .split("/")[0]
-            .split("(")[0]
-            .trim();
 
           return (
             <button
@@ -177,11 +170,7 @@ export function CampaignCharacterSelect({
                   }`}
                 >
                   <img
-                    src={charImageUrl(
-                      member.race || "Human",
-                      primaryClass,
-                      member.character
-                    )}
+                    src={charImageUrl(member.character)}
                     alt={member.character}
                     className="w-full h-full object-cover"
                     loading="lazy"
