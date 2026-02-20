@@ -43,7 +43,7 @@
       "duration": "5:11:37",
       "youtube_url": "https://www.youtube.com/watch?v=jfUPvccklhY",
       "file": "campaign4-episode4.json",
-      "available": false,
+      "available": true,
       "scene_description": "The investigation deepens as stone walls close in around the party. Facing stoic opposition and hidden truths, every face they encounter could be friend or foe in the political landscape of Aramán...",
       "scene_map": "dungeon"
     },
@@ -53,7 +53,7 @@
       "duration": "3:44:16",
       "youtube_url": "https://www.youtube.com/watch?v=w8ddrhcaqLk",
       "file": "campaign4-episode5.json",
-      "available": false,
+      "available": true,
       "scene_description": "The party faces a crossroads. Multiple leads pull them in different directions, and the choices they make now will shape the course of their journey through Aramán. Trust is a currency in short supply...",
       "scene_map": "forest"
     },
@@ -63,7 +63,7 @@
       "duration": "4:39:19",
       "youtube_url": "https://www.youtube.com/watch?v=WP8XS5SG04Y",
       "file": "campaign4-episode6.json",
-      "available": false,
+      "available": true,
       "scene_description": "Danger lurks around every corner as the party navigates treacherous terrain and even more treacherous politics. Blades flash in the dark, and the thorns of conspiracy draw blood...",
       "scene_map": "forest"
     },
@@ -73,7 +73,7 @@
       "duration": "4:05:59",
       "youtube_url": "https://www.youtube.com/watch?v=qxUDUV2iQvI",
       "file": "campaign4-episode7.json",
-      "available": false,
+      "available": true,
       "scene_description": "Following clues and tracking quarry, the party picks up a trail that leads them deeper into the mysteries of Aramán. The hunt is on, and the prey may not be what they expect...",
       "scene_map": "forest"
     },
@@ -83,7 +83,7 @@
       "duration": "4:29:30",
       "youtube_url": "https://www.youtube.com/watch?v=UBgjcSc9QOw",
       "file": "campaign4-episode8.json",
-      "available": false,
+      "available": true,
       "scene_description": "Vengeance drives the party forward as old wounds demand settling. The fangs of the past bite hard, and the cycle of revenge threatens to consume everything in its path...",
       "scene_map": "cave"
     },
@@ -93,7 +93,7 @@
       "duration": "4:15:14",
       "youtube_url": "https://www.youtube.com/watch?v=NR4rk3oma8A",
       "file": "campaign4-episode9.json",
-      "available": false,
+      "available": true,
       "scene_description": "The chase intensifies as hunters become the hunted. The party must outrun, outwit, and outfight those who would see them silenced. The hounds are baying, and time is running short...",
       "scene_map": "forest"
     },
@@ -103,7 +103,7 @@
       "duration": "3:32:21",
       "youtube_url": "https://www.youtube.com/watch?v=ohxUh7n7kJw",
       "file": "campaign4-episode10.json",
-      "available": false,
+      "available": true,
       "scene_description": "Violence begets violence as the party confronts the cost of their journey. Blood debts are called in, and the weight of every choice made thus far comes crashing down...",
       "scene_map": "dungeon"
     },
@@ -113,7 +113,7 @@
       "duration": "3:40:25",
       "youtube_url": "https://www.youtube.com/watch?v=Ta2rfRcooZE",
       "file": "campaign4-episode11.json",
-      "available": false,
+      "available": true,
       "scene_description": "A rare moment of respite as the party finds cause for celebration amidst the turmoil. But even in merry-making, the shadows of Aramán are never far away, and revelry can reveal as much as interrogation...",
       "scene_map": "town"
     },
@@ -123,7 +123,7 @@
       "duration": "3:36:30",
       "youtube_url": "https://www.youtube.com/watch?v=WRtb_XzfNTA",
       "file": "campaign4-episode12.json",
-      "available": false,
+      "available": true,
       "scene_description": "The party ventures into the wilderness near the Giant's Belt, a region of ancient power and untamed nature. The landscape itself seems to test their resolve as greater forces stir...",
       "scene_map": "forest"
     },
@@ -133,7 +133,7 @@
       "duration": "3:38:10",
       "youtube_url": "https://www.youtube.com/watch?v=RWh4BFyW15M",
       "file": "campaign4-episode13.json",
-      "available": false,
+      "available": true,
       "scene_description": "Desperate for safety, the party seeks sanctuary from the mounting dangers that pursue them. But in Aramán, even sacred ground may not offer the protection they need...",
       "scene_map": "town"
     },
@@ -143,7 +143,7 @@
       "duration": "3:42:16",
       "youtube_url": "https://www.youtube.com/watch?v=TRDzQIenIPQ",
       "file": "campaign4-episode14.json",
-      "available": false,
+      "available": true,
       "scene_description": "The party reaches a critical juncture — a bridge too far in every sense. The culmination of their journey through Aramán's tangled politics and ancient mysteries brings them to a point of no return...",
       "scene_map": "town"
     }
