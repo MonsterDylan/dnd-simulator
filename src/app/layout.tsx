@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "D&D Simulator - AI Dungeon Master",
+  title: "Critical Role Campaign Simulator",
   description: "An AI-powered Dungeons & Dragons experience with voice-enabled NPC party members",
 };
 

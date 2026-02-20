@@ -78,7 +78,7 @@ function GameContent() {
       {/* Top Bar */}
       <div className="h-12 bg-dnd-surface border-b border-dnd-border flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
-          <h1 className="text-dnd-gold font-bold text-sm">D&D Simulator</h1>
+          <h1 className="text-dnd-gold font-bold text-sm">CR Campaign Simulator</h1>
           {isCampaignMode && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-dnd-purple/20 text-dnd-purple border border-dnd-purple/30">
               Campaign 4

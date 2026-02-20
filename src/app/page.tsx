@@ -242,10 +242,10 @@ export default function Home() {
       {/* Title */}
       <div className="text-center mb-10">
         <h1 className="text-5xl font-bold text-dnd-gold mb-3 tracking-tight">
-          D&D Simulator
+          Critical Role Campaign Simulator
         </h1>
         <p className="text-dnd-text-muted text-lg max-w-md mx-auto">
-          AI-powered Dungeons & Dragons with voice-enabled NPC party members.
+          AI-powered D&D with voice-enabled NPC party members.
           You are the Dungeon Master.
         </p>
       </div>
