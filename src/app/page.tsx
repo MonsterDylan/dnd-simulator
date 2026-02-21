@@ -250,6 +250,16 @@ export default function Home() {
         </p>
       </div>
 
+      {/* Hero CTA */}
+      {party.length === 0 && !isGenerating && mode === null && (
+        <button
+          onClick={handleCampaignSelect}
+          className="mb-8 bg-gradient-to-r from-dnd-gold via-yellow-500 to-dnd-gold hover:from-yellow-400 hover:via-dnd-gold-light hover:to-yellow-400 text-dnd-text-dark font-extrabold text-xl px-12 py-5 rounded-2xl transition-all shadow-xl shadow-dnd-gold/30 hover:shadow-2xl hover:shadow-dnd-gold/40 hover:scale-105 active:scale-100 tracking-wide animate-pulse hover:animate-none"
+        >
+          Let&apos;s Begin Adventures
+        </button>
+      )}
+
       {/* Mode Selection */}
       {party.length === 0 && !isGenerating && mode !== "campaign_select" && mode !== "campaign_episode" && (
         <div className="flex flex-col items-center gap-4">
