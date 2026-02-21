@@ -13,6 +13,7 @@ import ReferenceChat from "@/components/ReferenceChat";
 import SceneChanger from "@/components/SceneChanger";
 import TerrainPalette from "@/components/TerrainPalette";
 import CampaignLore from "@/components/CampaignLore";
+import { MonsterSpawner } from "@/components/MonsterSpawner";
 
 function GameContent() {
   const router = useRouter();
@@ -120,6 +121,7 @@ function GameContent() {
         {/* Left Panel: Party + Tools (fully scrollable) */}
         <div className="w-72 bg-dnd-surface border-r border-dnd-border flex flex-col shrink-0 overflow-y-auto game-scroll">
           <PartyPanel />
+          <MonsterSpawner />
           <SceneChanger />
           <TerrainPalette />
           {isCampaignMode && <CampaignLore />}

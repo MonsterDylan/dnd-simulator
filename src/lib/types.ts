@@ -182,6 +182,12 @@ export interface DmInputRequest {
   };
 }
 
+export interface MonsterUpdate {
+  index: number;
+  damage?: number;
+  heal?: number;
+}
+
 export interface DmInputResponse {
   sessionId: string;
   mode: "exploration" | "combat";
@@ -189,6 +195,7 @@ export interface DmInputResponse {
   npcActions: NpcAction[];
   combatState?: CombatState;
   partyUpdates?: Record<string, Partial<Character>>;
+  monsterUpdates?: MonsterUpdate[];
   mapId?: string;
   sceneChange?: string;
 }

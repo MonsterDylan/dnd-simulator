@@ -321,6 +321,24 @@ export function NarrativeLog() {
         dispatch({ type: "SET_COMBAT", combat: response.combatState });
       }
 
+      // Apply incremental monster damage from AI
+      if (response.monsterUpdates && response.monsterUpdates.length > 0) {
+        for (const mu of response.monsterUpdates) {
+          if (mu.damage && mu.damage > 0) {
+            dispatch({ type: "DAMAGE_MONSTER", index: mu.index, amount: mu.damage });
+          }
+          if (mu.heal && mu.heal > 0 && state.combat?.monsters?.[mu.index]) {
+            const monster = state.combat.monsters[mu.index];
+            const newHp = Math.min(monster.hp.max, monster.hp.current + mu.heal);
+            dispatch({
+              type: "UPDATE_MONSTER",
+              index: mu.index,
+              updates: { hp: { current: newHp, max: monster.hp.max } },
+            });
+          }
+        }
+      }
+
       // Update party stats
       if (response.partyUpdates) {
         dispatch({ type: "UPDATE_PARTY", updates: response.partyUpdates });

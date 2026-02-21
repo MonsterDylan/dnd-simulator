@@ -7,13 +7,22 @@ import { MAP_NAMES, TERRAIN_CATALOG } from "@/lib/helpers";
 const GRID_SIZE = 16;
 const CELL_SIZE = 36;
 
+interface MonsterPopupState {
+  index: number;
+  screenX: number;
+  screenY: number;
+}
+
 export function GameMap() {
   const { state, dispatch } = useGame();
   const [dragging, setDragging] = useState<string | null>(null);
+  const [draggingMonster, setDraggingMonster] = useState<number | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [eraseMode, setEraseMode] = useState(false);
   const [painting, setPainting] = useState(false);
+  const [monsterPopup, setMonsterPopup] = useState<MonsterPopupState | null>(null);
+  const [damageInput, setDamageInput] = useState("");
 
   const isImageUrl = (state.scene.mapId ?? "").startsWith("http");
 
@@ -89,13 +98,39 @@ export function GameMap() {
       e.preventDefault();
       e.stopPropagation();
       setDragging(charName);
+      setMonsterPopup(null);
+    },
+    [state.terrainEditMode]
+  );
+
+  const handleMonsterMouseDown = useCallback(
+    (index: number, e: React.MouseEvent) => {
+      if (state.terrainEditMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingMonster(index);
+      setMonsterPopup(null);
+    },
+    [state.terrainEditMode]
+  );
+
+  const handleMonsterClick = useCallback(
+    (index: number, e: React.MouseEvent) => {
+      if (state.terrainEditMode) return;
+      e.stopPropagation();
+      setMonsterPopup({
+        index,
+        screenX: e.clientX,
+        screenY: e.clientY,
+      });
+      setDamageInput("");
     },
     [state.terrainEditMode]
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!dragging) return;
+      if (!dragging && draggingMonster === null) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
       const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
@@ -104,7 +139,7 @@ export function GameMap() {
         y: Math.max(0, Math.min(GRID_SIZE - 1, y)),
       });
     },
-    [dragging]
+    [dragging, draggingMonster]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -115,10 +150,18 @@ export function GameMap() {
         position: [dragPos.x, dragPos.y],
       });
     }
+    if (draggingMonster !== null && dragPos) {
+      dispatch({
+        type: "UPDATE_MONSTER_POSITION",
+        index: draggingMonster,
+        position: [dragPos.x, dragPos.y],
+      });
+    }
     setDragging(null);
+    setDraggingMonster(null);
     setDragPos(null);
     setPainting(false);
-  }, [dragging, dragPos, dispatch]);
+  }, [dragging, draggingMonster, dragPos, dispatch]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-4">
@@ -164,7 +207,7 @@ export function GameMap() {
 
       {/* Grid */}
       <div
-        className={mapClass}
+        className={`${mapClass} map-popup-anchor`}
         style={{
           width: GRID_SIZE * CELL_SIZE,
           height: GRID_SIZE * CELL_SIZE,
@@ -275,25 +318,55 @@ export function GameMap() {
         })}
 
         {/* Monster Tokens */}
-        {state.combat?.monsters?.map((monster, i) => (
-          <div
-            key={`monster-${i}`}
-            className="absolute flex items-center justify-center cursor-default z-10"
-            style={{
-              left: monster.position[0] * CELL_SIZE + 2,
-              top: monster.position[1] * CELL_SIZE + 2,
-              width: CELL_SIZE - 4,
-              height: CELL_SIZE - 4,
-            }}
-          >
+        {state.combat?.monsters?.map((monster, i) => {
+          const isDraggingThis = draggingMonster === i;
+          const pos =
+            isDraggingThis && dragPos
+              ? dragPos
+              : { x: monster.position[0], y: monster.position[1] };
+          const hpPct = monster.hp.max > 0 ? (monster.hp.current / monster.hp.max) * 100 : 0;
+          const isBloodied = hpPct <= 50;
+
+          return (
             <div
-              className="w-full h-full rounded-full bg-dnd-red border-2 border-dnd-red-light flex items-center justify-center text-white text-xs font-bold"
-              title={`${monster.name} (HP: ${monster.hp.current}/${monster.hp.max})`}
+              key={`monster-${i}`}
+              className={`absolute flex flex-col items-center justify-center cursor-grab active:cursor-grabbing z-10 ${
+                isDraggingThis ? "z-20 scale-110" : ""
+              }`}
+              style={{
+                left: pos.x * CELL_SIZE + 1,
+                top: pos.y * CELL_SIZE + 1,
+                width: CELL_SIZE - 2,
+                height: CELL_SIZE - 2,
+                transition: isDraggingThis ? "none" : "left 0.2s, top 0.2s",
+              }}
+              onMouseDown={(e) => handleMonsterMouseDown(i, e)}
+              onClick={(e) => handleMonsterClick(i, e)}
             >
-              {monster.name[0]}
+              <div
+                className={`w-[28px] h-[28px] rounded-full border-2 flex items-center justify-center text-white text-[10px] font-bold ${
+                  isBloodied
+                    ? "bg-dnd-red border-red-400 animate-pulse"
+                    : "bg-dnd-red border-dnd-red-light"
+                }`}
+              >
+                {monster.name[0]}
+              </div>
+              <div
+                className="w-[28px] h-[3px] rounded-full overflow-hidden mt-[1px]"
+                style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+              >
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${hpPct}%`,
+                    backgroundColor: isBloodied ? "#ef4444" : "#22c55e",
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Party Tokens */}
         {state.party.map((char) => {
@@ -349,6 +422,125 @@ export function GameMap() {
             </div>
           );
         })}
+        {/* Monster Popup */}
+        {monsterPopup && state.combat?.monsters?.[monsterPopup.index] && (() => {
+          const m = state.combat.monsters[monsterPopup.index];
+          const hpPct = m.hp.max > 0 ? Math.round((m.hp.current / m.hp.max) * 100) : 0;
+          const isBloodied = hpPct <= 50;
+          const popupLeft = Math.min(
+            monsterPopup.screenX - (document.querySelector(".map-popup-anchor")?.getBoundingClientRect().left ?? 0),
+            GRID_SIZE * CELL_SIZE - 200
+          );
+          const popupTop = Math.min(
+            monsterPopup.screenY - (document.querySelector(".map-popup-anchor")?.getBoundingClientRect().top ?? 0) - 10,
+            GRID_SIZE * CELL_SIZE - 200
+          );
+          return (
+            <>
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setMonsterPopup(null)}
+              />
+              <div
+                className="absolute z-40 bg-dnd-surface border border-dnd-border rounded-lg shadow-xl p-3 w-52"
+                style={{ left: Math.max(0, popupLeft), top: Math.max(0, popupTop) }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold text-dnd-red-light">{m.name}</h4>
+                  <button
+                    onClick={() => setMonsterPopup(null)}
+                    className="text-dnd-text-muted hover:text-dnd-text"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-1.5 mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-dnd-text-muted w-6">HP</span>
+                    <div className="flex-1 h-2 rounded-full bg-dnd-muted overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${hpPct}%`,
+                          backgroundColor: isBloodied ? "#ef4444" : "#22c55e",
+                        }}
+                      />
+                    </div>
+                    <span className={`text-[10px] font-mono ${isBloodied ? "text-dnd-red-light" : "text-dnd-text"}`}>
+                      {m.hp.current}/{m.hp.max}
+                    </span>
+                  </div>
+                  <div className="flex gap-3 text-[10px] text-dnd-text-muted">
+                    <span>AC {m.ac}</span>
+                    <span>CR {m.cr}</span>
+                  </div>
+                  {m.attacks.length > 0 && (
+                    <div className="text-[9px] text-dnd-text-muted">
+                      {m.attacks.map((a, idx) => (
+                        <div key={idx}>{a.name}: +{a.bonus}, {a.damage}</div>
+                      ))}
+                    </div>
+                  )}
+                  {m.specialAbilities && m.specialAbilities.length > 0 && (
+                    <div className="text-[9px] text-dnd-purple italic">
+                      {m.specialAbilities.join(", ")}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-1.5 mb-1.5">
+                  <input
+                    type="number"
+                    value={damageInput}
+                    onChange={(e) => setDamageInput(e.target.value)}
+                    placeholder="Dmg"
+                    className="w-16 text-xs bg-dnd-muted border border-dnd-border rounded px-1.5 py-1 text-dnd-text text-center focus:outline-none focus:border-dnd-gold"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const dmg = parseInt(damageInput);
+                        if (dmg > 0) {
+                          dispatch({ type: "DAMAGE_MONSTER", index: monsterPopup.index, amount: dmg });
+                          setDamageInput("");
+                          if (m.hp.current - dmg <= 0) setMonsterPopup(null);
+                        }
+                      }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const dmg = parseInt(damageInput);
+                      if (dmg > 0) {
+                        dispatch({ type: "DAMAGE_MONSTER", index: monsterPopup.index, amount: dmg });
+                        setDamageInput("");
+                        if (m.hp.current - dmg <= 0) setMonsterPopup(null);
+                      }
+                    }}
+                    disabled={!damageInput || parseInt(damageInput) <= 0}
+                    className="flex-1 text-[10px] font-medium px-2 py-1 rounded bg-dnd-gold/20 border border-dnd-gold/40 text-dnd-gold hover:bg-dnd-gold/30 disabled:opacity-30 transition-colors"
+                  >
+                    Deal Damage
+                  </button>
+                </div>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    dispatch({ type: "REMOVE_MONSTER", index: monsterPopup.index });
+                    setMonsterPopup(null);
+                  }}
+                  className="w-full text-[10px] font-medium px-2 py-1 rounded bg-dnd-red/20 border border-dnd-red/40 text-dnd-red-light hover:bg-dnd-red/30 transition-colors"
+                >
+                  Kill / Remove
+                </button>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );

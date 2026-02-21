@@ -7,7 +7,7 @@ import {
   type ReactNode,
   type Dispatch,
 } from "react";
-import type { GameState, NarrativeEntry, Character, CombatState, SceneInput, TerrainFeature, TerrainType } from "./types";
+import type { GameState, NarrativeEntry, Character, CombatState, SceneInput, TerrainFeature, TerrainType, Monster } from "./types";
 
 type GameAction =
   | { type: "SET_PARTY"; party: Character[]; sessionId: string; scene: SceneInput; voiceAssignments: Record<string, string> }
@@ -24,6 +24,11 @@ type GameAction =
   | { type: "CLEAR_TERRAIN" }
   | { type: "SET_TERRAIN_EDIT_MODE"; enabled: boolean }
   | { type: "SET_SELECTED_TERRAIN"; terrainType: TerrainType | null }
+  | { type: "ADD_MONSTER"; monster: Monster }
+  | { type: "REMOVE_MONSTER"; index: number }
+  | { type: "DAMAGE_MONSTER"; index: number; amount: number }
+  | { type: "UPDATE_MONSTER_POSITION"; index: number; position: [number, number] }
+  | { type: "UPDATE_MONSTER"; index: number; updates: Partial<Monster> }
   | { type: "SET_LOADING"; isLoading: boolean }
   | { type: "TOGGLE_AUDIO" }
   | { type: "RESET" };
@@ -125,6 +130,79 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "SET_SELECTED_TERRAIN":
       return { ...state, selectedTerrainType: action.terrainType };
+
+    case "ADD_MONSTER": {
+      const currentCombat = state.combat ?? {
+        initiativeOrder: [],
+        currentTurn: 0,
+        round: 1,
+        monsters: [],
+      };
+      return {
+        ...state,
+        combat: {
+          ...currentCombat,
+          monsters: [...currentCombat.monsters, action.monster],
+        },
+        mode: "combat",
+      };
+    }
+
+    case "REMOVE_MONSTER": {
+      if (!state.combat) return state;
+      const remaining = state.combat.monsters.filter((_, i) => i !== action.index);
+      return {
+        ...state,
+        combat: { ...state.combat, monsters: remaining },
+        ...(remaining.length === 0 && state.combat.initiativeOrder.every(e => e.isParty)
+          ? { mode: "exploration" as const }
+          : {}),
+      };
+    }
+
+    case "DAMAGE_MONSTER": {
+      if (!state.combat) return state;
+      const monsters = state.combat.monsters.map((m, i) => {
+        if (i !== action.index) return m;
+        const newHp = Math.max(0, m.hp.current - action.amount);
+        return { ...m, hp: { ...m.hp, current: newHp } };
+      });
+      const deadIndex = monsters.findIndex((m, i) => i === action.index && m.hp.current <= 0);
+      const alive = deadIndex >= 0 ? monsters.filter((_, i) => i !== deadIndex) : monsters;
+      return {
+        ...state,
+        combat: { ...state.combat, monsters: alive },
+        ...(alive.length === 0 && state.combat.initiativeOrder.every(e => e.isParty)
+          ? { mode: "exploration" as const }
+          : {}),
+      };
+    }
+
+    case "UPDATE_MONSTER_POSITION": {
+      if (!state.combat) return state;
+      return {
+        ...state,
+        combat: {
+          ...state.combat,
+          monsters: state.combat.monsters.map((m, i) =>
+            i === action.index ? { ...m, position: action.position } : m
+          ),
+        },
+      };
+    }
+
+    case "UPDATE_MONSTER": {
+      if (!state.combat) return state;
+      return {
+        ...state,
+        combat: {
+          ...state.combat,
+          monsters: state.combat.monsters.map((m, i) =>
+            i === action.index ? { ...m, ...action.updates } : m
+          ),
+        },
+      };
+    }
 
     case "SET_LOADING":
       return { ...state, isLoading: action.isLoading };
